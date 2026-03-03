@@ -1064,6 +1064,7 @@ class X7SAbsEnvCfg(X7SEnvCfg):
             )
 
 
+@configclass
 class X7SJointCameraCfg:
     left_hand_camera: TiledCameraCfg = None
     right_hand_camera: TiledCameraCfg = None
