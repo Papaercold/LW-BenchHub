@@ -127,8 +127,8 @@ class OpenTeleVision:
             -float(value["thumbstickValue"][1]),  # -1 to 1
             -float(value["thumbstickValue"][0]),  # -1 to 1
             float(value["thumbstick"]),  # 0 or 1
-            float(value["aButtonValue"]),  # 0 or 1
-            float(value["bButtonValue"]),  # 0 or 1
+            float(value["aButton"]),  # 0 or 1
+            float(value["bButton"]),  # 0 or 1
         ]
         controller_state_shared[:] = np.array(values)
 

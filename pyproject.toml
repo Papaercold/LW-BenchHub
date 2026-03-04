@@ -12,6 +12,7 @@ description = "Isaac Lab based Benchmark for Robotics"
 dependencies = [
     "lightwheel-sdk>=1.0.0",
     "pin-pink==3.1.0",
+    "qpsolvers==4.8.1",
     "grpcio>1.73",
     "protobuf>6",
     "pynput",
