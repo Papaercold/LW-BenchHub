@@ -714,8 +714,12 @@ def main():
 
     def setup_env_config_with_args(env, viewports=None):
         isaaclab_arena_env = env.cfg.isaaclab_arena_env
-        if not args_cli.headless and args_cli.enable_cameras and args_cli.enable_multiple_viewports:
-            viewports = setup_cameras(env, viewports)
+        if not args_cli.headless and args_cli.enable_cameras:
+            if args_cli.enable_multiple_viewports:
+                viewports = setup_cameras(env, viewports)
+            elif args_cli.first_person_view:
+                set_viewport_to_first_person(env)
+                viewports = viewports or {}
             for key, v_p in viewports.items():
                 res = v_p.viewport_api.get_texture_resolution()
                 sca = v_p.viewport_api.get_texture_resolution_scale()
@@ -1186,6 +1190,7 @@ def main():
     teleop_interface = create_teleop_interface(env)
 
     from lw_benchhub.utils.ui_utils import (
+        set_viewport_to_first_person,
         setup_cameras,
         setup_task_description_ui,
         spawn_robot_vis_helper_general,

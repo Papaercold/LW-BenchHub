@@ -244,6 +244,18 @@ def create_and_dock_viewport(env, parent_window_name, position, ratio, camera_pa
     return viewport
 
 
+def set_viewport_to_first_person(env):
+    """Set the default viewport to first_person_camera. No dock viewports."""
+    from pxr import UsdGeom
+    import omni.kit.viewport.utility as vp_utils
+    for prim in env.sim.stage.Traverse():
+        if prim.IsA(UsdGeom.Camera) and prim.GetName().lower() == "first_person_camera":
+            viewport = vp_utils.get_viewport_from_window_name()
+            viewport.set_active_camera(prim.GetPath())
+            viewport.set_texture_resolution((1280, 720))
+            break
+
+
 # TODO to optimize this function
 #  1. enable setup cameras with config
 #  2. try to optimize camera config to increase performance

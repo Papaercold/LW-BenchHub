@@ -2,6 +2,7 @@
 _base_:
   - teleop_base
 step_hz: 60
+enable_cameras: True
 first_person_view: True
 task: SizeSorting
 layout: robocasakitchen-2-2
