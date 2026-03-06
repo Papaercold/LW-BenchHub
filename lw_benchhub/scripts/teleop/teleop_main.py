@@ -719,7 +719,7 @@ def main():
                 viewports = setup_cameras(env, viewports)
             elif args_cli.first_person_view:
                 set_viewport_to_first_person(env)
-                viewports = viewports or {}
+            viewports = viewports or {}
             for key, v_p in viewports.items():
                 res = v_p.viewport_api.get_texture_resolution()
                 sca = v_p.viewport_api.get_texture_resolution_scale()
