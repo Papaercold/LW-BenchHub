@@ -62,8 +62,10 @@ class LwBaseOrchestrator(OrchestratorBase, NoDeepcopyMixin):
 
         # usd simplify
         if self.context.usd_simplify:
-            new_stage = usd.usd_simplify(self.scene.lw_benchhub_arena.stage, [ref.name for ref in self.fixture_refs.values()])
-            self.scene.scene_type
+            if getattr(self.scene, "lw_benchhub_arena", None) is not None:
+                new_stage = usd.usd_simplify(self.scene.lw_benchhub_arena.stage, [ref.name for ref in self.fixture_refs.values()])
+            else:
+                new_stage = usd.usd_simplify(self.scene.stage, [])
             self.scene.scene_usd_path = self.scene.scene_usd_path.replace(".usd", "_simplified.usd")
             new_stage.GetRootLayer().Export(self.scene.scene_usd_path)
             # modify background

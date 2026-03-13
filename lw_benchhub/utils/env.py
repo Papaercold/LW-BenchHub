@@ -193,6 +193,8 @@ def parse_env_cfg(
     teleop_device: str = None,
     resample_objects_placement_on_reset: bool | None = None,
     resample_robot_placement_on_reset: bool | None = None,
+    enable_global_illumination: bool = True,
+    enable_full_local_scene: bool = False,
     **kwargs,
 ) -> "ManagerBasedRLEnvCfg":
     """Parse configuration for an environment and override based on inputs.
@@ -245,6 +247,8 @@ def parse_env_cfg(
     context.num_envs = num_envs
     context.use_fabric = use_fabric
     context.replay_cfgs = replay_cfgs
+    context.enable_global_illumination = enable_global_illumination
+    context.enable_full_local_scene = enable_full_local_scene
     if replay_cfgs:
         if "ep_meta" in replay_cfgs:
             context.ep_meta = replay_cfgs["ep_meta"]

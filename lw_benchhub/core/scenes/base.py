@@ -18,12 +18,15 @@ from isaaclab_arena.scene.scene import Scene
 
 from lw_benchhub.core.context import get_context
 from lw_benchhub.utils.isaaclab_utils import NoDeepcopyMixin
+from lw_benchhub.utils.usd_utils import OpenUsd as usd
+from lw_benchhub.utils.isaaclab_utils.assets.general_asset_arena import GeneralAssetArena
 
 
 class LocalScene(Scene, NoDeepcopyMixin):
     def __init__(self, **kwargs):
         super().__init__()
         self.context = get_context()
+        self.num_envs = self.context.num_envs
         self.scene_name = self.context.scene_name
         self.scene_usd_path = self.context.scene_name
         self.scene_backend = self.context.scene_backend
@@ -32,13 +35,22 @@ class LocalScene(Scene, NoDeepcopyMixin):
         self.fxtr_placements = {}
         self.is_replay_mode = False
         assert self.scene_usd_path.endswith(".usd"), "Scene USD path must end with .usd"
+        if self.context.usd_simplify:
+            self.stage = usd.get_stage(self.scene_usd_path)
 
     def setup_env_config(self, orchestrator):
-        background = Background(
-            name=self.scene_type,
-            usd_path=self.scene_usd_path,
-            object_min_z=0.1,
-        )
+        if self.context.enable_full_local_scene:
+            background = GeneralAssetArena(
+                name='Scene',
+                usd_path=self.scene_usd_path,
+                object_min_z=0.1,
+            )
+        else:
+            background = Background(
+                name='Scene',
+                usd_path=self.scene_usd_path,
+                object_min_z=0.1,
+            )
         # flush self.assets
         self.assets = {}
         self.add_asset(background)
@@ -51,4 +63,9 @@ class LocalScene(Scene, NoDeepcopyMixin):
     def modify_env_cfg(self, env_cfg: IsaacLabArenaManagerBasedRLEnvCfg):
         env_cfg.scene_backend = self.scene_backend
         env_cfg.sim.render.enable_translucency = True
+        env_cfg.num_envs = self.num_envs
+
+        if self.context.enable_global_illumination:
+            env_cfg.sim.render.enable_global_illumination = True
+
         return env_cfg
