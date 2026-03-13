@@ -67,7 +67,7 @@ class BasePolicy(ABC):
             video_writer.add_image(combined_image)
 
     def step_environment(self, task_env: Any, action: Union[np.ndarray, torch.Tensor],
-                         usr_args: Dict[str, Any]) -> Tuple[Dict[str, Any], bool]:
+                         usr_args: Dict[str, Any]) -> Tuple[Dict[str, Any], bool, Dict[str, Any]]:
         """Execute environment step"""
 
         if isinstance(action, np.ndarray):
@@ -77,8 +77,9 @@ class BasePolicy(ABC):
             # action = action.squeeze(0)
             action = action[..., usr_args['joint_mapping']]
 
-        obs, _, terminated, _, _ = task_env.step(action)
-        return obs, terminated
+        obs, _, terminated, _, extras = task_env.step(action)
+        terminated = bool(torch.as_tensor(terminated).any().item())
+        return obs, terminated, extras
 
     def encode_obs(self, observation: Dict[str, Any], transpose: bool = True, keep_dim_env: bool = False) -> Dict[str, Any]:
         """

@@ -14,24 +14,32 @@
 
 import os
 import sys
-from typing_extensions import Mapping
+import importlib.util
+from pathlib import Path
 
 current_file_path = os.path.abspath(__file__)
 parent_directory = os.path.dirname(current_file_path)
-# sys.path.append(parent_directory)
 isaac_gr00t_path = os.path.join(parent_directory, "Isaac-GR00T")
 sys.path.append(isaac_gr00t_path)
 
+import numpy as np
 import torch
 from typing import Dict, Any
 from policy.base import BasePolicy
 
 try:
-    from policy.GR00T.data_config.data_config import LW_DATA_CONFIG_MAP
-    from gr00t.experiment.data_config import DATA_CONFIG_MAP
-    from gr00t.model.policy import Gr00tPolicy
+    from gr00t.configs.data.embodiment_configs import MODALITY_CONFIGS
+    from gr00t.policy.gr00t_policy import Gr00tPolicy
+    from gr00t.data.embodiment_tags import EmbodimentTag
 except ImportError as e:
-    print(f"gr00t not found, please install gr00t first: {e},if you not run gr00t policy, please ignore this error")
+    print(f"gr00t not found, please install gr00t first: {e}, if you not run gr00t policy, please ignore this error")
+
+
+def _load_modality_config(config_path: str):
+    """Dynamically load a modality config .py file to trigger register_modality_config."""
+    spec = importlib.util.spec_from_file_location("modality_config", config_path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
 
 
 class GR00TPolicy(BasePolicy):
@@ -42,22 +50,25 @@ class GR00TPolicy(BasePolicy):
 
     def _load_policy(self):
         """Load the policy from the model path."""
-        # Use the same data preprocessor as the loaded fine-tuned ckpts
-        if self.usr_args["data_config"] in DATA_CONFIG_MAP:
-            self.data_config = DATA_CONFIG_MAP[self.usr_args["data_config"]]
-        elif self.usr_args["data_config"] in LW_DATA_CONFIG_MAP:
-            self.data_config = LW_DATA_CONFIG_MAP[self.usr_args["data_config"]]
+        # If a modality config file path is provided, load it to register the config
+        modality_config_path = self.usr_args.get("modality_config_path", None)
+        if modality_config_path:
+            _load_modality_config(modality_config_path)
 
-        modality_config = self.data_config.modality_config()
-        modality_transform = self.data_config.transform()
-        # load the policy
+        embodiment_tag = self.usr_args["embodiment_tag"]
+        if embodiment_tag in MODALITY_CONFIGS:
+            self.data_config = MODALITY_CONFIGS[embodiment_tag]
+        else:
+            raise ValueError(
+                f"Invalid embodiment_tag: '{embodiment_tag}'. "
+                f"Available: {list(MODALITY_CONFIGS.keys())}"
+            )
+
         return Gr00tPolicy(
             model_path=self.usr_args["checkpoint"],
-            modality_config=modality_config,
-            modality_transform=modality_transform,
-            embodiment_tag=self.usr_args["embodiment_tag"],
-            denoising_steps=self.usr_args["denoising_steps"],
+            embodiment_tag=EmbodimentTag(embodiment_tag),
             device=self.simulation_device,
+            strict=False,
         )
 
     def get_model(self, usr_args):
@@ -67,115 +78,95 @@ class GR00TPolicy(BasePolicy):
         self.observation_config = observation_config or {}
         self.model = self._load_policy()
 
-    def _build_observation_window(self, obs):
+    def _build_observation(self, obs: dict) -> dict:
+        """Build the nested observation dict expected by Gr00tPolicy.get_action.
+
+        Target format:
+            video:    {key: np.ndarray(B, T, H, W, C) uint8}
+            state:    {key: np.ndarray(B, T, D) float32}
+            language: {key: [[instruction]]}
+        """
         custom_mapping = self.observation_config.get("custom_mapping", {})
-        obs_window = {"annotation.human.action.task_description": [self.instruction]}
-        for key, mapping in custom_mapping.items():
-            if isinstance(mapping, dict):
-                obs_window[key] = obs[next(iter(mapping.keys()))][..., next(iter(mapping.values()))]
-                obs_window[key] = obs_window[key][None, ...]  # N, env, ...
-            elif key == "joint_pos" or key == "eef_base":
-                joint_order = [i for i in range(len(self.data_config.state_keys))] if not mapping else mapping
-                for idx, state_key in enumerate(self.data_config.state_keys):
-                    obs_window[state_key] = obs[state_key][0][joint_order[idx]]
-                    obs_window[state_key] = obs_window[state_key][None, ...]  # N, env, ...
-                    obs_window[state_key] = obs_window[state_key][None, ...]  # N, env, ...
-                    obs_window[state_key] = obs_window[state_key][None, ...]  # N, env, ...
-            else:
-                # For video keys, mapping is the direct camera name (e.g., "global_camera")
-                # For other keys, try to find a key that starts with mapping
-                if key.startswith("video."):
-                    # Direct match for video keys
-                    mapping_key = mapping
-                else:
-                    # Try to find a key that starts with mapping
-                    mapping_key = next(iter([obs_key for obs_key in obs.keys() if obs_key.startswith(mapping)]), None)
+        video_keys = self.data_config["video"].modality_keys
+        state_keys = self.data_config["state"].modality_keys
+        language_key = self.data_config["language"].modality_keys[0]
 
-                if mapping_key is None:
-                    # Provide helpful error message
-                    if key.startswith("video."):
-                        error_msg = (
-                            f"Camera '{mapping}' not found in observation for video key '{key}'. "
-                            f"Available keys: {list(obs.keys())}. "
-                            f"Make sure cameras are enabled in the environment configuration (enable_cameras: true)."
-                        )
-                    else:
-                        error_msg = (
-                            f"Could not find observation key matching '{mapping}' for '{key}'. "
-                            f"Available keys: {list(obs.keys())}"
-                        )
-                    raise ValueError(error_msg)
+        result = {"video": {}, "state": {}, "language": {}}
 
-                if mapping_key not in obs:
-                    raise ValueError(
-                        f"Observation key '{mapping_key}' not found. Available keys: {list(obs.keys())}. "
-                        f"This might indicate that the camera '{mapping}' is not enabled or not in the observation space."
-                    )
+        # --- language ---
+        result["language"][language_key] = [[self.instruction]]
 
-                obs_window[key] = obs[mapping_key][None, ...]  # N, env, H,W,C
+        # --- video ---
+        for vk in video_keys:
+            cam_name = custom_mapping.get(vk, vk)
+            img = obs[cam_name]
+            if torch.is_tensor(img):
+                img = img.cpu().numpy()
+            if img.dtype != np.uint8:
+                img = img.astype(np.uint8)
+            # ensure shape (B, T, H, W, C)
+            while img.ndim < 5:
+                img = img[np.newaxis, ...]
+            result["video"][vk] = img
 
-        return obs_window
+        # --- state ---
+        for sk in state_keys:
+            src_key = custom_mapping.get(sk, sk)
+            state = obs[src_key]
+            if torch.is_tensor(state):
+                state = state.cpu().numpy()
+            state = state.astype(np.float32)
+            # ensure shape (B, T, D)
+            while state.ndim < 3:
+                state = state[np.newaxis, ...]
+            result["state"][sk] = state
+
+        return result
 
     def encode_obs(self, observation):
-        # Save original observation for camera data access
-        original_obs = observation.copy()
+        """Preprocess raw env observation into Gr00tPolicy input format."""
         observation = super().encode_obs(observation, transpose=False, keep_dim_env=True)
+        return self._build_observation(observation)
 
-        # Debug: print available keys in original and processed observation
-        custom_mapping = self.observation_config.get("custom_mapping", {})
-        camera_keys_needed = {mapping: k for k, mapping in custom_mapping.items() if k.startswith("video.")}
-
-        # Merge camera data from original observation if not present in processed observation
-        if 'policy' in original_obs:
-            for camera_name, video_key in camera_keys_needed.items():
-                if camera_name in original_obs['policy'] and camera_name not in observation:
-                    camera_data = original_obs['policy'][camera_name]
-                    if torch.is_tensor(camera_data):
-                        camera_data = camera_data.cpu().numpy()
-                    # Keep dimension if keep_dim_env is True
-                    # After encode_obs, we expect (H, W, C) or (C, H, W) format
-                    if len(camera_data.shape) == 4:  # (1, H, W, C) or (1, C, H, W)
-                        camera_data = camera_data[0]  # Remove env dimension
-                    observation[camera_name] = camera_data
-
-        observation = self._build_observation_window(observation)
-        return observation
-
-    def _mapping_action(self, actions):
-        robot_actions = []
-        for key in actions.keys():
-            robot_actions.append(torch.tensor(actions[key], device=self.simulation_device))
-        robot_actions = torch.concat(robot_actions, dim=-1)
-        return robot_actions
+    def _mapping_action(self, actions: dict) -> torch.Tensor:
+        """Concatenate action dict values into a single tensor (B, horizon, D)."""
+        parts = [torch.tensor(v, device=self.simulation_device, dtype=torch.float32)
+                 for v in actions.values()]
+        return torch.cat(parts, dim=-1)
 
     def get_action(self, observation):
-        robot_action_policy = self.model.get_action(observation)
-        robot_actions = self._mapping_action(robot_action_policy)
-        return robot_actions
-
-    def custom_obs_mapping(self, obs):
-        # define your own obs mapping here
-        return obs
+        action_dict, _ = self.model.get_action(observation)
+        return self._mapping_action(action_dict)
 
     def custom_action_mapping(self, action: torch.Tensor) -> torch.Tensor:
         # define your own action mapping here
         return action
 
+    def custom_obs_mapping(self, obs):
+        # define your own obs mapping here
+        return obs
+
     def eval(self, task_env: Any, observation: Dict[str, Any],
              usr_args: Dict[str, Any], video_writer: Any) -> bool:
+        terminated = False
+        states_list = []
         for _ in range(usr_args['time_out_limit']):
-            observation = self.encode_obs(observation)
-
-            observation = self.custom_obs_mapping(observation)
-            actions = self.get_action(observation)  # env, horizon, action_dim
+            encoded = self.encode_obs(observation)
+            encoded = self.custom_obs_mapping(encoded)
+            actions = self.get_action(encoded)
             actions = self.custom_action_mapping(actions)
-
             for i in range(self.usr_args["num_feedback_actions"]):
-                observation, terminated = self.step_environment(task_env, actions[:, i], usr_args)
+                observation, terminated, extras = self.step_environment(task_env, actions[:, i], usr_args)
+                if usr_args.get('save_states', False) and 'state' in extras:
+                    states_list.append(extras['state'])
                 self.add_video_frame(video_writer, observation, usr_args['record_camera'])
                 if terminated:
-                    return terminated
+                    break
+            if terminated:
+                break
+        if usr_args.get('save_states', False) and states_list:
+            torch.save(states_list, Path(usr_args['save_path']) / 'states.pt')
         return terminated
 
-    def reset_model(model):
+    def reset_model(self):
         pass

@@ -95,7 +95,7 @@ class PIPolicy(BasePolicy):
 
             for i in range(chunk):
                 action = actions[i]
-                observation, terminated = self.step_environment(task_env, action.unsqueeze(0), usr_args)
+                observation, terminated, extras = self.step_environment(task_env, action.unsqueeze(0), usr_args)
                 self.add_video_frame(video_writer, observation, usr_args['record_camera'])
                 if terminated:
                     return terminated

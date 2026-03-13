@@ -39,6 +39,7 @@ default_config_path = project_root / "policy" / "PI" / "deploy_policy_lerobot.ym
 parser = argparse.ArgumentParser(description="Eval policy in Isaac Lab environments.")
 parser.add_argument("--config", type=str, default=str(default_config_path))
 parser.add_argument("--overrides", nargs=argparse.REMAINDER)
+parser.add_argument("--save_states", action="store_true", help="Save states after each step")
 
 # parse the arguments
 args_cli = parser.parse_args()
@@ -140,8 +141,10 @@ def main(usr_args):
         contextlib.suppress(KeyboardInterrupt),  # and torch.inference_mode(),
     ):
         for idx in tqdm.tqdm(range(test_num)):
-            eval_video_path = Path(f"./eval_result/video/episode{idx}.mp4")
+            eval_video_path = Path(f"./eval_result/test_{idx}/record_video.mp4")
             eval_video_path.parent.mkdir(parents=True, exist_ok=True)
+
+            usr_args['save_path'] = f"./eval_result/test_{idx}"
             with media.VideoWriter(path=eval_video_path, shape=(usr_args['height'], usr_args['width'] * len(usr_args['record_camera'])), fps=30) as v:
                 obs, _ = env.reset()
                 policy.reset_model()
