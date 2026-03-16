@@ -15,19 +15,16 @@
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Iterable, List
+from typing import Iterable, List
 
 import torch
-import isaaclab.utils.math as math_utils
 
+import isaaclab.utils.math as math_utils
 from isaaclab.assets import Articulation, ArticulationData
 from isaaclab.envs import ManagerBasedRLEnv
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.sensors import FrameTransformer, FrameTransformerData
 from isaaclab.utils.math import subtract_frame_transforms
-
-if TYPE_CHECKING:
-    from isaaclab.envs import ManagerBasedRLEnv
 
 
 def rel_ee_object_distance(env: ManagerBasedRLEnv) -> torch.Tensor:

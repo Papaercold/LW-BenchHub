@@ -19,8 +19,8 @@ from isaaclab_arena.scene.scene import Scene
 from lw_benchhub.core.context import get_context
 from lw_benchhub.core.models.scenes.scene_parser import get_fixture_cfgs, parse_fixtures
 from lw_benchhub.utils.isaaclab_utils import NoDeepcopyMixin
-from lw_benchhub.utils.usd_utils import OpenUsd as usd
 from lw_benchhub.utils.isaaclab_utils.assets.general_asset_arena import GeneralAssetArena
+from lw_benchhub.utils.usd_utils import OpenUsd as usd
 
 
 class LocalScene(Scene, NoDeepcopyMixin):

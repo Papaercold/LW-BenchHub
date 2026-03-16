@@ -8,7 +8,14 @@
 import argparse
 import os
 
+import torch
+
+import isaaclab.sim as sim_utils
 from isaaclab.app import AppLauncher
+from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg
+from isaaclab.scene import InteractiveSceneCfg
+from isaaclab.utils import configclass
+
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="Zero agent for Isaac Lab environments with USD file loading.")
@@ -28,13 +35,6 @@ AppLauncher.add_app_launcher_args(parser)
 args_cli = parser.parse_args()
 app_launcher = AppLauncher(args_cli)
 simulation_app = app_launcher.app
-
-
-import isaaclab.sim as sim_utils
-import torch
-from isaaclab.envs import DirectRLEnv, DirectRLEnvCfg
-from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.utils import configclass
 
 
 @configclass

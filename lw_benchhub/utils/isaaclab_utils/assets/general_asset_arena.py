@@ -14,13 +14,12 @@
 
 from typing import Any
 
-from isaaclab.assets import ArticulationCfg, RigidObjectCfg
+from isaaclab.assets import AssetBaseCfg, ArticulationCfg, RigidObjectCfg
 from isaaclab.sim.spawners.from_files.from_files_cfg import UsdFileCfg
 
 from isaaclab_arena.assets.object import Object
 from isaaclab_arena.assets.object_base import ObjectType
 from isaaclab_arena.utils.pose import Pose
-from isaaclab.assets import AssetBaseCfg
 
 from lw_benchhub.utils.usd_utils import OpenUsd as usd
 
@@ -124,8 +123,8 @@ class GeneralAssetArena(Object):
 
     def get_object_cfg(self) -> dict[str, Any]:
         """
-        Returns a dictionary containing the base configuration and all discovered 
-        articulation and rigidbody configurations.
+        Returns a dictionary containing the base configuration and
+        all discovered articulation and rigidbody configurations.
         This method is called by Scene.get_scene_cfg() to generate the scene configuration.
         """
         cfg_dict = {}

@@ -15,9 +15,11 @@
 import argparse
 import os
 from pathlib import Path
+
 import h5py
 import numpy as np
 import tqdm
+
 from lerobot.datasets.lerobot_dataset import LeRobotDataset
 
 VIDEO_INFO = {

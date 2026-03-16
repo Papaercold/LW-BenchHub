@@ -15,13 +15,18 @@
 """Simple script to replay saved states from policy evaluation."""
 
 import argparse
+from pathlib import Path
+
+import gymnasium as gym
+import mediapy as media
 import numpy as np
 import torch
 import yaml
-from pathlib import Path
-import mediapy as media
+
 from isaaclab.app import AppLauncher
-from lw_benchhub.utils.env import parse_env_cfg, ExecuteMode
+from lw_benchhub.distributed.restful import DotDict
+from lw_benchhub.utils.env import ExecuteMode, parse_env_cfg
+from lw_benchhub.utils.place_utils.env_utils import reset_physx
 
 parser = argparse.ArgumentParser(description="Replay saved states.")
 parser.add_argument("--config", type=str, required=True, help="Config yaml file")
@@ -34,10 +39,6 @@ with open(args.config, "r", encoding="utf-8") as f:
 
 app_launcher = AppLauncher(vars(args))
 simulation_app = app_launcher.app
-
-import gymnasium as gym
-from lw_benchhub.utils.place_utils.env_utils import reset_physx
-from lw_benchhub.distributed.restful import DotDict
 
 env_cfg_dict = DotDict(config["env_cfg"])
 env_cfg = parse_env_cfg(scene_backend=env_cfg_dict.scene_backend, task_backend=env_cfg_dict.task_backend,
