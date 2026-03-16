@@ -1305,23 +1305,25 @@ def check_valid_robot_pose(env: ManagerBasedRLEnv, robot_pos, env_ids=None):
             get_default_logger().info(f"Robot pose: {robot_pos} is out of the scene bounds: {scene_bbox.GetMin()} - {scene_bbox.GetMax()}")
             return False
 
-    # 3. check if the robot is in overlap with the objects in the scene
-    # all rigid prim in the scene except the robot
-    # get_default_logger().info(f"check env prim collision with robot")
-    for obs_prim in scene_prim.GetChildren():
-        if not obs_prim.IsValid() or obs_prim.GetAttribute("type").Get() == "WallLayout":
-            continue
-        # Compute the world-space bounding box for prim
-        obs_bbox = OpenUsd.get_prim_aabb_bounding_box(obs_prim, use_cache=False)
+    cfg_scene_backend = getattr(env.cfg, "scene_backend", None)
 
-        # Check if the robot bounding box overlaps with the current object bounding box
-        if check_overlap(env, robot_bbox, obs_bbox):
-            get_default_logger().info(f"Collision detected between robot and object: {obs_prim.GetPath()}")
-            get_default_logger().info(f"Robot BBox: {robot_bbox.GetMin()} - {robot_bbox.GetMax()}")
-            get_default_logger().info(f"Robot Size: {robot_bbox.GetSize()}")
-            get_default_logger().info(f"Object BBox: {obs_bbox.GetMin()} - {obs_bbox.GetMax()}")
-            get_default_logger().info(f"Object Prim Size: {obs_bbox.GetSize()}")
-            return False
+    # 3. check overlap with scene prims (skip in local mode for speed and robustness).
+    if (cfg_scene_backend != "local") and scene_prim is not None:
+        # all rigid prim in the scene except the robot
+        for obs_prim in scene_prim.GetChildren():
+            if not obs_prim.IsValid() or obs_prim.GetAttribute("type").Get() == "WallLayout":
+                continue
+            # Compute the world-space bounding box for prim
+            obs_bbox = OpenUsd.get_prim_aabb_bounding_box(obs_prim, use_cache=False)
+
+            # Check if the robot bounding box overlaps with the current object bounding box
+            if check_overlap(env, robot_bbox, obs_bbox):
+                get_default_logger().info(f"Collision detected between robot and object: {obs_prim.GetPath()}")
+                get_default_logger().info(f"Robot BBox: {robot_bbox.GetMin()} - {robot_bbox.GetMax()}")
+                get_default_logger().info(f"Robot Size: {robot_bbox.GetSize()}")
+                get_default_logger().info(f"Object BBox: {obs_bbox.GetMin()} - {obs_bbox.GetMax()}")
+                get_default_logger().info(f"Object Prim Size: {obs_bbox.GetSize()}")
+                return False
 
     for fixtr in env.cfg.isaaclab_arena_env.task.fixture_refs.values():
         fixtr_body_bboxes = fixtr.get_body_bbox(env)

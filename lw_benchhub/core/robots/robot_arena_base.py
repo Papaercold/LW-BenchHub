@@ -111,7 +111,10 @@ class PrePhysicsStepJointTargetsRecorder(RecorderTerm):
         return None, None
 
     def record_pre_reset(self, env_ids):
-        if self._env.cfg.scene_backend == "robocasa" and self._env.cfg.task_backend == "robocasa":
+        scene_backend = getattr(self._env.cfg, "scene_backend", None)
+        task_backend = getattr(self._env.cfg, "task_backend", None)
+
+        if scene_backend == "robocasa" and task_backend == "robocasa":
             for env_id, success in zip(env_ids, (self._env.cfg.isaaclab_arena_env.task._success_cache >= self._env.cfg.isaaclab_arena_env.task._success_count)[env_ids]):
                 if not success.item():
                     self._env.recorder_manager._episodes[env_id] = EpisodeData()
@@ -318,8 +321,19 @@ class LwEmbodimentBase(EmbodimentBase):
             self.modify_observation_cameras(orchestrator.task.task_type)
             self._setup_camera_config(orchestrator.task.task_type)
         elif orchestrator.task.context.task_backend == "local":
-            self.init_robot_base_pos_anchor = np.array(self.scene_config.robot.init_state.pos)
-            self.init_robot_base_ori_anchor = Tn.mat2euler(Tn.quat2mat(Tn.convert_quat(np.array(self.scene_config.robot.init_state.rot), to="xyzw")))
+            # For local tasks, prefer task-aware anchor (e.g. near dishwasher / sink / stove)
+            # instead of the robot asset default spawn pose.
+            if orchestrator.task.init_robot_base_ref is not None:
+                self.init_robot_base_pos_anchor, self.init_robot_base_ori_anchor = self.get_robot_anchor(orchestrator)
+            else:
+                self.init_robot_base_pos_anchor = np.array(self.scene_config.robot.init_state.pos)
+                self.init_robot_base_ori_anchor = Tn.mat2euler(Tn.quat2mat(Tn.convert_quat(np.array(self.scene_config.robot.init_state.rot), to="xyzw")))
+            # Ensure local backend initial spawn also uses the computed anchor.
+            self.scene_config.robot.init_state.pos = self.init_robot_base_pos_anchor
+            self.scene_config.robot.init_state.rot = Tn.convert_quat(Tn.mat2quat(Tn.euler2mat(self.init_robot_base_ori_anchor)), to="wxyz")
+            # Keep local replay/teleop camera setup consistent with robocasa path.
+            self.modify_observation_cameras(orchestrator.task.task_type)
+            self._setup_camera_config(orchestrator.task.task_type)
 
     def get_robot_anchor(self, orchestrator):
         (

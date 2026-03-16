@@ -17,6 +17,7 @@ from isaaclab_arena.environments.isaaclab_arena_manager_based_env import IsaacLa
 from isaaclab_arena.scene.scene import Scene
 
 from lw_benchhub.core.context import get_context
+from lw_benchhub.core.models.scenes.scene_parser import get_fixture_cfgs, parse_fixtures
 from lw_benchhub.utils.isaaclab_utils import NoDeepcopyMixin
 from lw_benchhub.utils.usd_utils import OpenUsd as usd
 from lw_benchhub.utils.isaaclab_utils.assets.general_asset_arena import GeneralAssetArena
@@ -31,6 +32,7 @@ class LocalScene(Scene, NoDeepcopyMixin):
         self.scene_usd_path = self.context.scene_name
         self.scene_backend = self.context.scene_backend
         self.scene_type = "local"
+        self.stage = None
         self.fixtures = {}
         self.fxtr_placements = {}
         self.is_replay_mode = False
@@ -39,15 +41,27 @@ class LocalScene(Scene, NoDeepcopyMixin):
             self.stage = usd.get_stage(self.scene_usd_path)
 
     def setup_env_config(self, orchestrator):
+        # Parse fixtures from local USD scene to support fixture-dependent tasks.
+        self.stage = usd.get_stage(self.scene_usd_path)
+        self.fixtures = parse_fixtures(
+            self.stage,
+            self.context.num_envs,
+            self.context.seed,
+            self.context.device,
+        )
+        self.fxtr_placements = {}
+        self.fixture_cfgs = get_fixture_cfgs(self)
+        print(f"[LocalScene Debug] Parsed fixtures count: {len(self.fixtures)}")
+
         if self.context.enable_full_local_scene:
             background = GeneralAssetArena(
-                name='Scene',
+                name="Scene",
                 usd_path=self.scene_usd_path,
                 object_min_z=0.1,
             )
         else:
             background = Background(
-                name='Scene',
+                name="Scene",
                 usd_path=self.scene_usd_path,
                 object_min_z=0.1,
             )

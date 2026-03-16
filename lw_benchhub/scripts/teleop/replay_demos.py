@@ -49,6 +49,9 @@ parser.add_argument("--dataset_file", type=str, default="/your/path/to/dataset.h
 parser.add_argument("--robot_scale", type=float, default=1.0, help="robot scale")
 parser.add_argument("--first_person_view", action="store_true", help="first person view")
 parser.add_argument("--replay_all_clips", action="store_true", help="replay all clips. If not specified, only replay the last clips")
+parser.add_argument("--scene_backend", type=str, default=None, help="Override scene backend for replay (e.g. local/robocasa).")
+parser.add_argument("--task_backend", type=str, default=None, help="Override task backend for replay (e.g. local/robocasa).")
+parser.add_argument("--layout", type=str, default=None, help="Override scene name/layout. Supports local USD absolute path.")
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -123,8 +126,8 @@ def main():
         task_name = args_cli.task.strip()
     else:  # robocasa
         from lw_benchhub.utils.env import parse_env_cfg, ExecuteMode
-        scene_backend = env_args["scene_backend"] if "scene_backend" in env_args else "robocasa"
-        task_backend = env_args["task_backend"] if "task_backend" in env_args else "robocasa"
+        scene_backend = args_cli.scene_backend or env_args.get("scene_backend", "robocasa")
+        task_backend = args_cli.task_backend or env_args.get("task_backend", "robocasa")
         task_name = env_args["task_name"] if args_cli.task is None else args_cli.task
         task_name = task_name.strip() if task_name else ""
         robot_name = env_args["robot_name"]
@@ -132,14 +135,22 @@ def main():
             robot_name = "DoublePiper-Abs"
         if robot_name == "double_piper_rel":
             robot_name = "DoublePiper-Rel"
-        if "scene_type" in env_args:
-            scene_type = env_args["scene_type"]
+        if args_cli.layout:
+            # Explicit override from CLI for local/custom scene replay.
+            scene_name = args_cli.layout
         else:
-            if "libero" in env_args["usd_path"]:
-                scene_type = "libero"
+            if "scene_type" in env_args and "layout_id" in env_args and "style_id" in env_args:
+                scene_name = f"{env_args['scene_type']}-{env_args['layout_id']}-{env_args['style_id']}"
+            elif "layout_id" in env_args and "style_id" in env_args:
+                scene_type = "libero" if "usd_path" in env_args and "libero" in env_args["usd_path"] else "robocasakitchen"
+                scene_name = f"{scene_type}-{env_args['layout_id']}-{env_args['style_id']}"
+            elif "usd_path" in env_args and env_args["usd_path"]:
+                scene_name = env_args["usd_path"]
             else:
-                scene_type = "robocasakitchen"
-        scene_name = f"{scene_type}-{env_args['layout_id']}-{env_args['style_id']}"
+                raise KeyError(
+                    "Missing scene metadata in env_args for replay. "
+                    "Please pass --layout and optionally --scene_backend/--task_backend."
+                )
         env_cfg = parse_env_cfg(
             scene_backend=scene_backend,
             task_backend=task_backend,
@@ -205,6 +216,12 @@ def main():
 
     # Initialize video processor (manages VideoWriter internally)
     if app_launcher._enable_cameras:
+        active_camera_names = env.cfg.isaaclab_arena_env.embodiment.active_observation_camera_names
+        if len(active_camera_names) == 0:
+            raise RuntimeError(
+                "No active observation cameras found for replay. "
+                "Please verify camera config is added to observation for the selected backend/task."
+            )
         # calculate the shape of the video recorder
         num_cameras = sum(env.cfg.isaaclab_arena_env.task.context.execute_mode in c["execute_mode"] for c in env.cfg.isaaclab_arena_env.embodiment.observation_cameras.values())
         max_cameras_per_row = 4  # Maximum cameras per row
@@ -219,8 +236,12 @@ def main():
         video_height = args_cli.height * num_rows
         video_width = max_cameras_in_row * args_cli.width
 
-        # Calculate product video dimensions
-        product_camera_names = [n for n, c in env.cfg.isaaclab_arena_env.embodiment.observation_cameras.items() if "product" in c.get("tags", [])]
+        # Calculate product video dimensions.
+        # Keep only cameras that are both tagged as product and active in current replay mode.
+        product_camera_names = [
+            n for n in active_camera_names
+            if "product" in env.cfg.isaaclab_arena_env.embodiment.observation_cameras.get(n, {}).get("tags", [])
+        ]
         product_mp4_path = None
         if product_camera_names:
             product_num_cameras = len(product_camera_names)

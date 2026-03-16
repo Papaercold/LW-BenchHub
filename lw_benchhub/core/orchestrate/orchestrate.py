@@ -75,7 +75,7 @@ class LwBaseOrchestrator(OrchestratorBase, NoDeepcopyMixin):
         """
         Reset the event.
         """
-        if self.task.context.task_backend == "robocasa":
+        if self.task.context.task_backend in ("robocasa", "local"):
             self.task._setup_scene(env, env_ids)
             self.reset_root_state(env=env, env_ids=env_ids)
 
