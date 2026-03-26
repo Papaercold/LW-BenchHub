@@ -36,3 +36,9 @@ register_pipeline(
     entry_point=f"{__name__}.pipelines.kettle_boiling:KettleBoilingPipeline",
     cfg_entry_point=f"{__name__}.pipelines.kettle_boiling:KettleBoilingPipelineCfg",
 )
+
+register_pipeline(
+    id="LWBenchhub-Autosim-DessertUpgradePipeline-v0",
+    entry_point=f"{__name__}.pipelines.dessert_upgrade:DessertUpgradePipeline",
+    cfg_entry_point=f"{__name__}.pipelines.dessert_upgrade:DessertUpgradePipelineCfg",
+)

@@ -3,11 +3,13 @@
 
 import argparse
 from isaaclab.app import AppLauncher
+import traceback
 
 
 # add argparse arguments
 parser = argparse.ArgumentParser(description="run autosim example pipeline.")
 parser.add_argument("--pipeline_id", type=str, default=None, help="Name of the autosim pipeline.")
+parser.add_argument("--num_runs", type=int, default=1, help="Number of runs to run.")
 
 # append AppLauncher cli args
 AppLauncher.add_app_launcher_args(parser)
@@ -28,7 +30,14 @@ from autosim import make_pipeline
 
 def main():
     pipeline = make_pipeline(args_cli.pipeline_id)
-    pipeline.run()
+    for i in range(args_cli.num_runs):
+        print(f"====== Running autosim pipeline [{i+1}/{args_cli.num_runs}] ======")
+        try:
+            pipeline.run()
+        except Exception as e:
+            print(f"Error: {e}")
+            print(traceback.format_exc())
+            continue
 
 
 if __name__ == '__main__':

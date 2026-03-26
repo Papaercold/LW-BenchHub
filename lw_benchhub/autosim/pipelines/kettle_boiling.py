@@ -129,7 +129,7 @@ class KettleBoilingPipeline(AutoSimPipeline):
         return env
 
     def get_env_extra_info(self) -> EnvExtraInfo:
-        available_objects = self._env.scene.keys()
+        available_objects = ["obj", "stovetop_main_group"]
         return EnvExtraInfo(
             task_name="Robocasa-Task-KettleBoiling",
             objects=available_objects,
