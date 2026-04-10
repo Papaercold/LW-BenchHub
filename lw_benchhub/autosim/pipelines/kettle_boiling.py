@@ -44,6 +44,9 @@ class KettleBoilingPipelineCfg(AutoSimPipelineCfg):
 
         self.occupancy_map.floor_prim_suffix = "Scene/floor_room"
 
+        self.skills.reach.extra_cfg.extra_target_link_names = ["link20_tip"]
+        self.skills.reach.extra_cfg.extra_target_mode = "keep_initial_relative_offset"
+
         self.max_steps = 800
 
         self.motion_planner.robot_config_file = "x7s.yml"
@@ -157,26 +160,6 @@ class KettleBoilingPipeline(AutoSimPipeline):
                                   0.707]),
                 ],
             },
-            object_extra_reach_target_poses={
-                "obj": {
-                    "link20_tip": [torch.tensor([-0.329,  # -X
-                                                0.105,  # 0.105 -Y
-                                                0.10,
-                                                0.708,
-                                                -0.008,
-                                                -0.003,
-                                                -0.707]),]
-                },
-                "stovetop_main_group": {
-                    "link20_tip": [torch.tensor([0.3,  # +X
-                                                -0.045,  # +Y
-                                                0.24,  # +Z
-                                                0.707,
-                                                0.,
-                                                0.,
-                                                0.707]),]
-                },
-            }
         )
 
 

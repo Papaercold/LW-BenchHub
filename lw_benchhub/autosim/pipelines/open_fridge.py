@@ -4,6 +4,7 @@ from isaaclab.envs import ManagerBasedEnv
 from isaaclab.utils import configclass
 
 import torch
+import numpy as np
 
 from autosim.decomposers import LLMDecomposerCfg
 from jinja2 import Environment, FileSystemLoader
@@ -129,6 +130,7 @@ class OpenFridgePipeline(AutoSimPipeline):
                         0.707]),
                 ],
             },
-            object_extra_reach_target_poses={
-            }
+            object_navigate_sample_range={
+                "fridge_main_group": (3 / 2 * np.pi, 7 / 4 * np.pi),
+            },
         )

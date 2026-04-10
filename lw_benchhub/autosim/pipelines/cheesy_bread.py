@@ -39,6 +39,8 @@ class CheesyBreadPipelineCfg(AutoSimPipelineCfg):
         self.skills.moveto.extra_cfg.yaw_tolerance = 0.005  # 0.01
         self.skills.moveto.extra_cfg.uws_dwa = False
 
+        self.skills.reach.extra_cfg.extra_target_link_names = ["link20_tip"]
+
         self.occupancy_map.floor_prim_suffix = "Scene/floor_room"
 
         self.motion_planner.robot_config_file = "x7s.yml"
@@ -153,26 +155,6 @@ class CheesyBreadPipeline(AutoSimPipeline):
                                   -0.508]),
                 ],
             },
-            object_extra_reach_target_poses={
-                "cheese": {
-                    "link20_tip": [torch.tensor([0.305,
-                                                -0.055,
-                                                0.025,
-                                                0.705,
-                                                -0.002,
-                                                0.05,
-                                                0.707]),]
-                },
-                "bread": {
-                    "link20_tip": [torch.tensor([-0.194,
-                                                0,
-                                                -0.278,
-                                                0.548,
-                                                0.46,
-                                                -0.478,
-                                                -0.51]),]
-                },
-            }
         )
 
 

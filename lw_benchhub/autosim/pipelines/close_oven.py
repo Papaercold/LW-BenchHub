@@ -40,6 +40,9 @@ class CloseOvenPipelineCfg(AutoSimPipelineCfg):
         self.skills.moveto.extra_cfg.uws_dwa = False
         self.max_steps = 1000
 
+        self.skills.reach.extra_cfg.extra_target_link_names = ["link20_tip"]
+        self.skills.reach.extra_cfg.extra_target_mode = "keep_relative_offset"
+
         self.skills.moveto.extra_cfg.sampling_radius = 1.6
 
         self.skills.push.extra_cfg.move_offset = 0.36  # 0.38
@@ -135,15 +138,4 @@ class CloseOvenPipeline(AutoSimPipeline):
                                   0.707]),
                 ],
             },
-            object_extra_reach_target_poses={
-                "oven_main_group": {
-                    "link20_tip": [torch.tensor([0.124,
-                                                -0.739,
-                                                -0.180,
-                                                0.707,
-                                                -0.00,
-                                                -0.00,
-                                                0.707]),]
-                },
-            }
         )

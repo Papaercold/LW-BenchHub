@@ -43,6 +43,9 @@ class CoffeeSetupMugPipelineCfg(AutoSimPipelineCfg):
         self.skills.lift.extra_cfg.lift_offset = 0.20
         # self.skills.debug_target_pose()
 
+        self.skills.reach.extra_cfg.extra_target_link_names = ["link20_tip"]
+        self.skills.reach.extra_cfg.extra_target_mode = "keep_relative_offset"
+
         self.occupancy_map.floor_prim_suffix = "Scene/floor_room"
 
         self.motion_planner.robot_config_file = "x7s.yml"
@@ -130,27 +133,7 @@ class CoffeeSetupMugPipeline(AutoSimPipeline):
                     torch.tensor([-0.028, -0.01, 0.01, 0.985, -0.003, -0.004, 0.173]),
                 ],
                 "coffee_machine_main_group": [
-                    torch.tensor([0.0, -0.12, 0.05, 0.707, 0.0, 0.0, 0.707]),
+                    torch.tensor([0.0, -0.12, -0.03, 0.707, 0.0, 0.0, 0.707]),
                 ],
             },
-            object_extra_reach_target_poses={
-                "obj": {
-                    "link20_tip": [torch.tensor([0.102,
-                                                -0.282,
-                                                0.052,
-                                                0.985,
-                                                -0.003,
-                                                -0.004,
-                                                0.173]),]
-                },
-                "coffee_machine_main_group": {
-                    "link20_tip": [torch.tensor([0.27,
-                                                 -0.12,
-                                                 -0.03,
-                                                 0.707,
-                                                 0.0,
-                                                 0.0,
-                                                 0.707]),]
-                },
-            }
         )

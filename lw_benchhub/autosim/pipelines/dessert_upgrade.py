@@ -43,6 +43,9 @@ class DessertUpgradePipelineCfg(AutoSimPipelineCfg):
         self.skills.lift.extra_cfg.lift_offset = 0.20
         # self.skills.debug_target_pose()
 
+        self.skills.reach.extra_cfg.extra_target_link_names = ["link20_tip"]
+        self.skills.reach.extra_cfg.extra_target_mode = "keep_initial_relative_offset"
+
         self.occupancy_map.floor_prim_suffix = "Scene/floor_room"
 
         self.motion_planner.robot_config_file = "x7s.yml"
@@ -122,20 +125,12 @@ class DessertUpgradePipeline(AutoSimPipeline):
             ee_link_name="left_hand_link",
             object_reach_target_poses={
                 "dessert1": [
-                    torch.tensor([0.003, -0.049, 0.025, 0.705, -0.002, 0.05, 0.707]),
+                    torch.tensor([0.003, -0.019, 0.025, 0.705, -0.002, 0.05, 0.707]),
                 ],
                 "receptacle": [
-                    torch.tensor([0.003, -0.049, 0.055, 0.705, -0.002, 0.05, 0.707]),
+                    torch.tensor([0.003, -0.049, 0.085, 0.705, -0.002, 0.05, 0.707]),
                 ],
             },
-            object_extra_reach_target_poses={
-                "dessert1": {
-                    "link20_tip": [torch.tensor([0.305, -0.055, 0.025, 0.705, -0.002, 0.05, 0.707]),]
-                },
-                "receptacle": {
-                    "link20_tip": [torch.tensor([0.305, -0.055, 0.055, 0.705, -0.002, 0.05, 0.707]),]
-                },
-            }
         )
 
 
