@@ -44,14 +44,7 @@ register_pipeline(
 )
 
 register_pipeline(
-    id="LWBenchhub-Autosim-G1LiftCubePipeline-v0",
-    entry_point=f"{__name__}.pipelines.g1_lift_cube:G1LiftCubePipeline",
-    cfg_entry_point=f"{__name__}.pipelines.g1_lift_cube:G1LiftCubePipelineCfg",
-)
-
-# New semantic name for the same G1 pipeline (microwave opening task).
-register_pipeline(
     id="LWBenchhub-Autosim-G1OpenMicrowavePipeline-v0",
-    entry_point=f"{__name__}.pipelines.g1_lift_cube:G1LiftCubePipeline",
-    cfg_entry_point=f"{__name__}.pipelines.g1_lift_cube:G1LiftCubePipelineCfg",
+    entry_point=f"{__name__}.pipelines.g1_open_microwave:G1OpenMicrowavePipeline",
+    cfg_entry_point=f"{__name__}.pipelines.g1_open_microwave:G1OpenMicrowavePipelineCfg",
 )

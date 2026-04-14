@@ -1,13 +1,10 @@
-"""G1 autosim pipeline — RoboCasa kitchen variant.
-
-Uses a RoboCasa kitchen scene (PnPCounterToMicrowave) so that all objects
-come with RigidBodyAPI already baked into their USD files.
+"""G1 autosim pipeline — open microwave door.
 
 Robot:   G1 loco controller variant (leg locomotion + dual arms + hands)
 Task:    Open microwave door
 Scene:   RoboCasa kitchen  robocasakitchen-2-2
 Planner: cuRobo right-arm planning (g1_autosim.yml)
-Nav:     A* + leg locomotion controller (no virtual sliding base)
+Nav:     A* + leg locomotion controller
 """
 
 from pathlib import Path
@@ -26,7 +23,7 @@ _G1_URDF_DIR = Path(__file__).parent.parent / "content/assets/robot/g1"
 
 
 @configclass
-class G1LiftCubePipelineCfg(AutoSimPipelineCfg):
+class G1OpenMicrowavePipelineCfg(AutoSimPipelineCfg):
     """Pipeline configuration for G1 RoboCasa kitchen microwave opening."""
 
     decomposer:     LLMDecomposerCfg   = LLMDecomposerCfg()
@@ -51,26 +48,31 @@ class G1LiftCubePipelineCfg(AutoSimPipelineCfg):
         # ---- cuRobo ----
         self.motion_planner.robot_config_file  = "g1_autosim.yml"
         self.motion_planner.curobo_config_path = str(_CUROBO_ROOT / "configs" / "robot")
-        # Point cuRobo asset root at the g1 directory so the relative URDF
-        # path inside g1_autosim.yml resolves correctly.
         self.motion_planner.curobo_asset_path  = str(_G1_URDF_DIR)
         self.motion_planner.world_ignore_subffixes = ["Scene/floor_room"]
-        # Focus collision world around the microwave area.
-        self.motion_planner.world_only_subffixes = ["Scene/microwave_main_group"]
+        self.motion_planner.world_only_subffixes   = ["Scene/microwave_main_group"]
+
+        # ---- Pull skill (open microwave door by pulling) ----
         self.skills.pull.extra_cfg.move_offset = 0.25
-        self.skills.pull.extra_cfg.move_axis = "-x"
+        self.skills.pull.extra_cfg.move_axis   = "-x"
+
         self.max_steps = 1000
 
 
-class G1LiftCubePipeline(AutoSimPipeline):
-    """Pipeline that opens microwave door with the G1 right arm.
-
-    Scene loading uses RoboCasa task assets and the G1 locomotion robot config.
-    """
+class G1OpenMicrowavePipeline(AutoSimPipeline):
+    """Pipeline that opens a microwave door with the G1 right arm."""
 
     _TASK_NAME = "Robocasa-OpenMicrowave-G1-Autosim-v0"
 
     def __init__(self, cfg: AutoSimPipelineCfg):
+        from lw_benchhub.autosim.compat_autosim import (
+            patch_curobo_config,
+            patch_env_extra_info,
+            patch_reach_skill,
+        )
+        patch_env_extra_info()
+        patch_reach_skill()
+        patch_curobo_config()
         super().__init__(cfg)
 
     # ------------------------------------------------------------------
@@ -80,15 +82,12 @@ class G1LiftCubePipeline(AutoSimPipeline):
     def load_env(self) -> ManagerBasedEnv:
         import gymnasium as gym
         from lw_benchhub.utils.env import parse_env_cfg, ExecuteMode
-        from lw_benchhub.autosim.isaaclab_tasks.g1_lift_cube_cfg import (
+        from lw_benchhub.autosim.isaaclab_tasks.g1_autosim_cfg import (
             G1ActionsCfg,
             G1ObservationsCfg,
             G1EventCfg,
         )
 
-        # ------------------------------------------------------------------
-        # 1. Load a RoboCasa kitchen scene with G1 loco robot config.
-        # ------------------------------------------------------------------
         env_cfg = parse_env_cfg(
             scene_backend="robocasa",
             task_backend="robocasa",
@@ -110,24 +109,13 @@ class G1LiftCubePipeline(AutoSimPipeline):
             headless_mode=False,
         )
 
-        # ------------------------------------------------------------------
-        # 2. Replace default robot action/obs/event with autosim-compatible
-        #    terms while keeping G1 leg locomotion in base_action.
-        # ------------------------------------------------------------------
-        env_cfg.actions = G1ActionsCfg()
-
-        # Minimal observations — autosim reads scene data directly.
+        env_cfg.actions      = G1ActionsCfg()
         env_cfg.observations = G1ObservationsCfg()
+        env_cfg.events       = G1EventCfg()
 
-        # Empty events — autosim manages resets itself.
-        env_cfg.events = G1EventCfg()
-
-        # Disable built-in terminations — autosim manages episode endings.
+        # Disable built-in timeout — autosim manages episode endings.
         env_cfg.terminations.time_out = None
 
-        # ------------------------------------------------------------------
-        # 3. Register and instantiate the env.
-        # ------------------------------------------------------------------
         gym.register(
             id=self._TASK_NAME,
             entry_point="isaaclab.envs:ManagerBasedRLEnv",
@@ -135,7 +123,17 @@ class G1LiftCubePipeline(AutoSimPipeline):
             disable_env_checker=True,
         )
 
-        return gym.make(self._TASK_NAME, cfg=env_cfg).unwrapped
+        env = gym.make(self._TASK_NAME, cfg=env_cfg).unwrapped
+
+        # env_cfg.events was replaced with an empty G1EventCfg to prevent
+        # unwanted autosim resets, which removed the startup init_task event
+        # that normally calls task.init_fixtures(env) → fixture.setup_env(env).
+        # Call it explicitly so fixture controllers (e.g. Microwave) have
+        # self._env set before update_state() is triggered.
+        arena_env = env.cfg.isaaclab_arena_env
+        arena_env.task.init_fixtures(env)
+
+        return env
 
     # ------------------------------------------------------------------
     # Task metadata for the LLM decomposer
@@ -146,16 +144,13 @@ class G1LiftCubePipeline(AutoSimPipeline):
             task_name="Robocasa-Task-OpenMicrowave",
             objects=list(self._env.scene.keys()),
             robot_name="robot",
-            robot_base_link_name="pelvis",           # G1 physical base link
-            ee_link_name="right_wrist_yaw_link",  # last rigid body before palm in g1_three_fingers.usd
+            robot_base_link_name="pelvis",
+            ee_link_name="right_wrist_yaw_link",
             object_reach_target_poses={
-                # Approximate pre-grasp on microwave handle.
                 "microwave_main_group": [
                     torch.tensor([0.05, -0.22, 0.12, 0.707, 0.0, 0.0, 0.707]),
                 ],
             },
         )
-        # Compatibility with autosim versions whose Reach skill expects optional
-        # extra-EEF pose fields/methods on EnvExtraInfo.
         env_info.object_extra_reach_target_poses = {}
         return env_info
