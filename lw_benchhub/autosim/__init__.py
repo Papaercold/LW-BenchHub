@@ -14,12 +14,6 @@ register_pipeline(
 )
 
 register_pipeline(
-    id="LWBenchhub-Autosim-PnPCounterToMicrowavePipeline-v0",
-    entry_point=f"{__name__}.pipelines.pnp_counter_to_microwave:PnPCounterToMicrowavePipeline",
-    cfg_entry_point=f"{__name__}.pipelines.pnp_counter_to_microwave:PnPCounterToMicrowavePipelineCfg",
-)
-
-register_pipeline(
     id="LWBenchhub-Autosim-CheesyBreadPipeline-v0",
     entry_point=f"{__name__}.pipelines.cheesy_bread:CheesyBreadPipeline",
     cfg_entry_point=f"{__name__}.pipelines.cheesy_bread:CheesyBreadPipelineCfg",
