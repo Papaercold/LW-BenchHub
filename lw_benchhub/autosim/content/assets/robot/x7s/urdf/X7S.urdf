@@ -43,7 +43,7 @@
     </inertial>
   </link>
 
-  <joint name="base_yaw_joint" type="revolute">
+  <joint name="base_yaw_link" type="revolute">
     <parent link="base_y_link" />
     <child link="base_yaw_link" />
     <origin xyz="0 0 0" rpy="0 0 0" />

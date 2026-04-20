@@ -9,6 +9,7 @@ import traceback
 # add argparse arguments
 parser = argparse.ArgumentParser(description="run autosim example pipeline.")
 parser.add_argument("--pipeline_id", type=str, default=None, help="Name of the autosim pipeline.")
+parser.add_argument("--robot_profile", type=str, default=None, help="Name of the robot profile.")
 parser.add_argument("--num_runs", type=int, default=1, help="Number of runs to run.")
 
 # append AppLauncher cli args
@@ -29,7 +30,7 @@ from autosim import make_pipeline
 
 
 def main():
-    pipeline = make_pipeline(args_cli.pipeline_id)
+    pipeline = make_pipeline(args_cli.pipeline_id, robot_profile=args_cli.robot_profile)
     for i in range(args_cli.num_runs):
         print(f"====== Running autosim pipeline [{i+1}/{args_cli.num_runs}] ======")
         try:

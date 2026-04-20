@@ -75,7 +75,7 @@ robot_cfg:
       joint_names: [
         "base_x_joint", 
         "base_y_joint", 
-        "base_yaw_joint", 
+        "base_yaw_link", 
         "body_z_joint",     # joint1
         "body_y_joint",     # joint2
         "right_shoulder_y", # joint14
