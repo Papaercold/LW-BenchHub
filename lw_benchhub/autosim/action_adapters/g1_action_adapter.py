@@ -64,10 +64,13 @@ class G1ActionAdapter(ActionAdapterBase):
         last_action = env.action_manager.action
         action = last_action[0, :].clone()
 
-        # base_action uses scale=0.01: action_value = delta / 0.01
-        action[0] = (vx_body * dt_control) / 0.01
-        action[1] = (vy_body * dt_control) / 0.01
-        action[2] = (vyaw   * dt_control) / 0.01
+        # LegPositionAction: cmd_raw is normalized; actual = cmd_raw * max_cmd
+        # max_cmd = [0.3, 0.3, 0.3] from g1_loco.yaml
+        _MAX_CMD = 0.3
+        action[0] = vx_body / _MAX_CMD
+        action[1] = vy_body / _MAX_CMD
+        action[2] = vyaw   / _MAX_CMD
+        action[3] = 0.0  # mode=0: locomotion
 
         return action
 
@@ -89,16 +92,17 @@ class G1ActionAdapter(ActionAdapterBase):
         r_arm_ids, _ = robot.find_joints(env.action_manager.get_term("right_arm_action").cfg.joint_names)
         l_arm_ids, _ = robot.find_joints(env.action_manager.get_term("left_arm_action").cfg.joint_names)
 
-        # Keep base steady for manipulation (zero delta → no base movement).
-        action[:3] = 0.0
-
         # G1ActionsCfg action layout:
-        #   [0:3]   base_action    (scale=0.01 delta, kept zero above)
-        #   [3:10]  right_arm      (7-DoF absolute)
-        #   [10:17] left_arm       (7-DoF absolute)
-        #   [17:31] gripper        (14 joints absolute)
-        action[3:10]  = target_joint_pos[r_arm_ids]
-        action[10:17] = target_joint_pos[l_arm_ids]
+        #   [0:4]   base_action    LegPositionAction [vx, vy, vyaw, mode]
+        #   [4:11]  right_arm      (7-DoF absolute)
+        #   [11:18] left_arm       (7-DoF absolute)
+        #   [18:32] gripper        (14 joints absolute)
+        action[0] = 0.0
+        action[1] = 0.0
+        action[2] = 0.0
+        action[3] = 1.0  # mode=1: squat/stance — keep legs fixed during arm motion
+        action[4:11]  = target_joint_pos[r_arm_ids]
+        action[11:18] = target_joint_pos[l_arm_ids]
 
         return action
 
@@ -111,17 +115,20 @@ class G1ActionAdapter(ActionAdapterBase):
 
         gripper_signal = skill_output.action[0].item()  # -1.0 = grasp, +1.0 = ungrasp
 
-        # Map signal → actual joint angle
-        finger_angle = self.cfg.finger_close_angle if gripper_signal < 0 else self.cfg.finger_open_angle
+        angles = self.cfg.finger_close_angles if gripper_signal < 0 else self.cfg.finger_open_angles
+        finger_angles = torch.tensor(angles, dtype=torch.float32, device=env.device)
 
         last_action = env.action_manager.action
         action = last_action[0, :].clone()
-        action[:3] = 0.0  # keep base steady
+        action[0] = 0.0
+        action[1] = 0.0
+        action[2] = 0.0
+        action[3] = 1.0  # mode=1: squat/stance
 
         robot = env.scene["robot"]
         finger_ids, _ = robot.find_joints(env.action_manager.get_term("gripper_action").cfg.joint_names)
 
-        # gripper_action starts at action index 17
-        action[17:17 + len(finger_ids)] = finger_angle
+        # gripper_action starts at action index 18
+        action[18:18 + len(finger_ids)] = finger_angles[:len(finger_ids)]
 
         return action

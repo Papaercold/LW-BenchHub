@@ -44,6 +44,10 @@ from autosim.calibration.pose_sampler import OffsetSampler
 
 def main() -> None:
     pipeline = make_pipeline(args_cli.pipeline_id)
+    # Batch solving (both ik_only and full motion planning) uses a different goal type
+    # than the warmup, which triggers a CUDA graph reset error on CUDA < 12.0.
+    # Disabling CUDA graph avoids the conflict entirely.
+    pipeline.cfg.motion_planner.use_cuda_graph = False
     reach_plan_sweep(
         pipeline,
         ReachPlanSweepCfg(

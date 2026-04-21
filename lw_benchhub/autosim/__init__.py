@@ -42,3 +42,23 @@ register_pipeline(
     entry_point=f"{__name__}.pipelines.g1_open_microwave:G1OpenMicrowavePipeline",
     cfg_entry_point=f"{__name__}.pipelines.g1_open_microwave:G1OpenMicrowavePipelineCfg",
 )
+
+register_pipeline(
+    id="LWBenchhub-Autosim-G1OpenMicrowaveRightOnlyPipeline-v0",
+    entry_point=f"{__name__}.pipelines.g1_open_microwave_right_only:G1OpenMicrowaveRightOnlyPipeline",
+    cfg_entry_point=f"{__name__}.pipelines.g1_open_microwave_right_only:G1OpenMicrowaveRightOnlyPipelineCfg",
+)
+
+register_pipeline(
+    id="LWBenchhub-Autosim-G1KettleBoilingPipeline-v0",
+    entry_point=f"{__name__}.pipelines.kettle_boiling:KettleBoilingPipeline",
+    cfg_entry_point=f"{__name__}.pipelines.kettle_boiling:KettleBoilingPipelineCfg",
+    robot_profile="g1_loco_left",
+)
+
+register_pipeline(
+    id="LWBenchhub-Autosim-G1CloseOvenPipeline-v0",
+    entry_point=f"{__name__}.pipelines.close_oven:CloseOvenPipeline",
+    cfg_entry_point=f"{__name__}.pipelines.close_oven:CloseOvenPipelineCfg",
+    robot_profile="g1_loco_left",
+)
