@@ -3,7 +3,7 @@ robot_cfg:
   kinematics:
     use_usd_kinematics: False
     usd_robot_root: "/g1_autosim"
-    urdf_path: "G1_autosim.urdf"          # relative to robot_config_root_path (g1/ dir)
+    urdf_path: "urdf/G1_autosim.urdf"
     asset_root_path: "."                   # meshes are resolved from the urdf file dir
 
     base_link: "world_link"
