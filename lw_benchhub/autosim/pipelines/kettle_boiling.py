@@ -174,6 +174,11 @@ class KettleBoilingPipelineCfg(AutoSimPipelineCfg):
         ]
 
 
+@configclass
+class G1KettleBoilingPipelineCfg(KettleBoilingPipelineCfg):
+    robot_profile: str = "g1_loco_left"
+
+
 class KettleBoilingPipeline(AutoSimPipeline):
     def __init__(self, cfg: AutoSimPipelineCfg):
         self._resolved_robot = resolve_robot_settings(

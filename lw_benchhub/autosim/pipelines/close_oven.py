@@ -113,6 +113,11 @@ _DOOR_PROFILES = {"g1_loco_left"}
 _DOOR_JOINT_PATH = "/World/envs/env_0/Scene/oven_main_group/Oven032_door/door_joint"
 
 
+@configclass
+class G1CloseOvenPipelineCfg(CloseOvenPipelineCfg):
+    robot_profile: str = "g1_loco_left"
+
+
 class CloseOvenPipeline(AutoSimPipeline):
     def __init__(self, cfg: AutoSimPipelineCfg):
         self._resolved_robot = resolve_robot_settings(
