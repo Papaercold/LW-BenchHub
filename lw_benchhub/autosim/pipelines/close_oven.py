@@ -1,7 +1,5 @@
 import torch
 from autosim.core.pipeline import AutoSimPipeline, AutoSimPipelineCfg
-from autosim.core.registration import SkillRegistry
-from autosim.core.types import PipelineOutput
 from autosim.decomposers import LLMDecomposerCfg
 from isaaclab.envs import ManagerBasedEnv
 from isaaclab.utils import configclass
@@ -35,21 +33,22 @@ def _x7s_skill_cfg(cfg) -> None:
 
 
 def _g1_skill_cfg(cfg) -> None:
-    cfg.skills.moveto.extra_cfg.local_planner.max_linear_velocity  = 0.2
-    cfg.skills.moveto.extra_cfg.local_planner.max_angular_velocity = 0.2
+    cfg.skills.moveto.extra_cfg.local_planner.max_linear_velocity  = 1.0
+    cfg.skills.moveto.extra_cfg.local_planner.max_angular_velocity = 0.4
     cfg.skills.moveto.extra_cfg.local_planner.predict_time         = 0.4
     cfg.skills.moveto.extra_cfg.global_planner.safety_distance     = 0.5
     cfg.skills.moveto.extra_cfg.global_planner.proximity_weight    = 3.0
-    cfg.skills.moveto.extra_cfg.waypoint_tolerance                 = 0.25
-    cfg.skills.moveto.extra_cfg.goal_tolerance                     = 0.30
-    cfg.skills.moveto.extra_cfg.yaw_tolerance                      = 0.01
+    cfg.skills.moveto.extra_cfg.waypoint_tolerance                 = 0.1
+    cfg.skills.moveto.extra_cfg.goal_tolerance                     = 0.1
+    cfg.skills.moveto.extra_cfg.yaw_tolerance                      = 0.5
     cfg.skills.moveto.extra_cfg.use_dwa                            = False
-    cfg.skills.moveto.extra_cfg.sampling_radius                    = 0.87
-    cfg.skills.push.extra_cfg.move_offset = 0.10
+    cfg.skills.moveto.extra_cfg.sampling_radius                    = 1.13
+    cfg.skills.push.extra_cfg.move_offset = 0.36
     cfg.skills.push.extra_cfg.move_axis   = "+x"
     cfg.skills.lift.extra_cfg.move_offset = 0.15
     cfg.skills.lift.extra_cfg.move_axis   = "+z"
-    cfg.max_steps = 2000
+    cfg.max_steps = 1000
+    cfg.motion_planner.use_cuda_graph = False
 
 
 TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
@@ -67,11 +66,10 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
     "g1_loco_left": TaskRobotOverride(
         object_reach_target_poses={
             "oven_main_group": [
-                torch.tensor([-0.1687, -0.9214, -0.0407, 0.3762, 0.0, 0.0, 0.9264]),
+                torch.tensor([-0.176, -0.840,  0.000, 0.707, 0.0, 0.0, 0.707]),
             ],
         },
-        init_state_pos_delta=(-0.21, -0.70, 0.01),
-        init_state_rot=(0.707, 0.0, 0.0, 0.707),
+        init_state_pos_delta=(-0.3, -1.2, 0.0),
         skill_cfg_fn=_g1_skill_cfg,
     ),
 }
@@ -100,7 +98,7 @@ class CloseOvenPipelineCfg(AutoSimPipelineCfg):
             resolved_robot.override.skill_cfg_fn(self)
 
         self.occupancy_map.floor_prim_suffix = "Scene/floor_room"
-        self.motion_planner.world_ignore_subffixes = ["Scene/floor_room"]
+        self.motion_planner.world_ignore_subffixes = ["Scene/floor_room", "Scene/oven_main_group/Oven032_door"]
         self.motion_planner.world_only_subffixes   = [
             "Scene/island_island_group",
             "Scene/island_panel_cab_right_island_group_1",
@@ -147,28 +145,7 @@ class CloseOvenPipeline(AutoSimPipeline):
             self._set_door_drive(stiffness=0.0, damping=1.0, target_deg=0.0)
 
     def execute_skill_sequence(self, decompose_result):
-        if self._resolved_robot.profile.profile_id not in _DOOR_PROFILES:
-            return super().execute_skill_sequence(decompose_result)
-
-        self._check_skill_extra_cfg()
-        self.reset_env()
-
-        for subtask in decompose_result.subtasks:
-            for skill_info in subtask.skills:
-                if skill_info.skill_type == "push":
-                    self._set_door_drive(stiffness=50.0, damping=5.0, target_deg=0.0)
-                skill = SkillRegistry.create(
-                    skill_info.skill_type, self.cfg.skills.get(skill_info.skill_type).extra_cfg
-                )
-                if self._action_adapter.should_skip_apply(skill):
-                    continue
-                goal = skill.extract_goal_from_info(skill_info, self._env, self._env_extra_info)
-                success, steps = self._execute_single_skill(skill, goal)
-                if not success:
-                    raise ValueError(f"Skill {skill_info.skill_type} failed after {steps} steps.")
-
-        self.reset_env()
-        return PipelineOutput(success=True, generated_actions=self._generated_actions)
+        return super().execute_skill_sequence(decompose_result)
 
     def load_env(self) -> ManagerBasedEnv:
         import gymnasium as gym

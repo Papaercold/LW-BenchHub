@@ -7,9 +7,9 @@ robot_cfg:
     asset_root_path: "."                   # meshes are resolved from the urdf file dir
 
     base_link: "world_link"
-    ee_link: "left_wrist_yaw_link"          # left-hand end-effector
-    # Extra tracked links (right ee for dual-arm tasks)
-    link_names: ["left_wrist_yaw_link"]
+    ee_link: "left_hand_palm_link"
+    # Extra tracked links
+    link_names: ["left_hand_palm_link"]
 
     collision_link_names:
       [
@@ -18,6 +18,7 @@ robot_cfg:
         "left_shoulder_pitch_link",  "left_shoulder_roll_link",  "left_shoulder_yaw_link",
         "left_elbow_link",
         "left_wrist_roll_link",      "left_wrist_pitch_link",    "left_wrist_yaw_link",
+        "left_hand_palm_link",
         "right_shoulder_pitch_link", "right_shoulder_roll_link", "right_shoulder_yaw_link",
         "right_elbow_link",
         "right_wrist_roll_link",     "right_wrist_pitch_link",   "right_wrist_yaw_link",
@@ -25,7 +26,7 @@ robot_cfg:
 
     collision_spheres: "spheres/collision_g1_autosim.yml"
     collision_sphere_buffer: 0.002
-    extra_collision_spheres: {"left_wrist_yaw_link": 20}
+    extra_collision_spheres: {"left_hand_palm_link": 20}
     use_global_cumul: True
 
     self_collision_ignore:
@@ -38,6 +39,7 @@ robot_cfg:
         "left_elbow_link":           ["left_wrist_roll_link"],
         "left_wrist_roll_link":      ["left_wrist_pitch_link"],
         "left_wrist_pitch_link":     ["left_wrist_yaw_link"],
+        "left_wrist_yaw_link":       ["left_hand_palm_link"],
         "right_shoulder_pitch_link": ["right_shoulder_roll_link"],
         "right_shoulder_roll_link":  ["right_shoulder_yaw_link"],
         "right_shoulder_yaw_link":   ["right_elbow_link"],
@@ -55,6 +57,7 @@ robot_cfg:
         "left_shoulder_pitch_link",  "left_shoulder_roll_link",  "left_shoulder_yaw_link",
         "left_elbow_link",
         "left_wrist_roll_link",      "left_wrist_pitch_link",    "left_wrist_yaw_link",
+        "left_hand_palm_link",
         "right_shoulder_pitch_link", "right_shoulder_roll_link", "right_shoulder_yaw_link",
         "right_elbow_link",
         "right_wrist_roll_link",     "right_wrist_pitch_link",   "right_wrist_yaw_link",
