@@ -49,6 +49,7 @@ def _g1_skill_cfg(cfg) -> None:
     cfg.skills.lift.extra_cfg.move_axis   = "+z"
     cfg.max_steps = 1000
     cfg.motion_planner.use_cuda_graph = False
+    cfg.action_adapter.squat_settle_steps = 0
 
 
 TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
@@ -66,7 +67,7 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
     "g1_loco_left": TaskRobotOverride(
         object_reach_target_poses={
             "oven_main_group": [
-                torch.tensor([-0.176, -0.840,  0.000, 0.707, 0.0, 0.0, 0.707]),
+                torch.tensor([-0.176, -0.840,  0.010, 0.707, 0.0, 0.0, 0.707]),
             ],
         },
         init_state_pos_delta=(-0.3, -1.2, 0.0),
@@ -109,6 +110,8 @@ class CloseOvenPipelineCfg(AutoSimPipelineCfg):
 
 _DOOR_PROFILES = {"g1_loco_left"}
 _DOOR_JOINT_PATH = "/World/envs/env_0/Scene/oven_main_group/Oven032_door/door_joint"
+_G1_PUSH_STEPS = 100       # env steps to walk forward during push; tune if needed
+_G1_PUSH_FWD_CMD = 0.5     # normalized body-frame vx command (0–1)
 
 
 @configclass
@@ -144,8 +147,39 @@ class CloseOvenPipeline(AutoSimPipeline):
             self._env.cfg.isaaclab_arena_env.task._setup_scene(self._env)
             self._set_door_drive(stiffness=0.0, damping=1.0, target_deg=0.0)
 
-    def execute_skill_sequence(self, decompose_result):
-        return super().execute_skill_sequence(decompose_result)
+    def _execute_single_skill(self, skill, goal):
+        if (self._resolved_robot.profile.profile_id in _DOOR_PROFILES
+                and skill.cfg.name == "push"):
+            return self._execute_g1_push()
+        return super()._execute_single_skill(skill, goal)
+
+    def _execute_g1_push(self) -> tuple[bool, int]:
+        """Walk the G1 forward for a fixed number of steps with arm joints frozen."""
+        robot = self._env.scene["robot"]
+        r_arm_ids, _ = robot.find_joints(
+            self._env.action_manager.get_term("right_arm_action").cfg.joint_names
+        )
+        l_arm_ids, _ = robot.find_joints(
+            self._env.action_manager.get_term("left_arm_action").cfg.joint_names
+        )
+        frozen = robot.data.joint_pos[self._env_id].clone()
+
+        adapter_result = self._last_action[self._env_id].clone()
+        adapter_result[0] = _G1_PUSH_FWD_CMD
+        adapter_result[1] = 0.0
+        adapter_result[2] = 0.0
+        adapter_result[3] = 0.0   # mode=0: locomotion
+        adapter_result[4:11]  = frozen[r_arm_ids]
+        adapter_result[11:18] = frozen[l_arm_ids]
+
+        for _ in range(_G1_PUSH_STEPS):
+            action = self._last_action.clone()
+            action[self._env_id, : adapter_result.shape[0]] = adapter_result
+            self._env.step(action)
+            self._last_action = action
+            self._generated_actions.append(action)
+
+        return True, _G1_PUSH_STEPS
 
     def load_env(self) -> ManagerBasedEnv:
         import gymnasium as gym
