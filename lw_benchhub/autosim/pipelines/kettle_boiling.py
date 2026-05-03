@@ -28,8 +28,8 @@ def _x7s_skill_cfg(cfg) -> None:
 
 
 def _g1_skill_cfg(cfg) -> None:
-    cfg.skills.moveto.extra_cfg.local_planner.max_linear_velocity  = 0.2
-    cfg.skills.moveto.extra_cfg.local_planner.max_angular_velocity = 0.2
+    cfg.skills.moveto.extra_cfg.local_planner.max_linear_velocity  = 1.0
+    cfg.skills.moveto.extra_cfg.local_planner.max_angular_velocity = 0.4
     cfg.skills.moveto.extra_cfg.local_planner.predict_time         = 0.4
     cfg.skills.moveto.extra_cfg.global_planner.safety_distance     = 0.5
     cfg.skills.moveto.extra_cfg.global_planner.proximity_weight    = 3.0
@@ -37,7 +37,7 @@ def _g1_skill_cfg(cfg) -> None:
     cfg.skills.moveto.extra_cfg.goal_tolerance                     = 0.30
     cfg.skills.moveto.extra_cfg.yaw_tolerance                      = 0.01
     cfg.skills.moveto.extra_cfg.use_dwa                            = False
-    cfg.skills.moveto.extra_cfg.per_object_sampling_radius         = {"obj": 0.5, "stovetop_main_group": 0.30}
+    cfg.skills.moveto.extra_cfg.per_object_sampling_radius         = {"obj": 0.60, "stovetop_main_group": 0.30}
 
 
 def _x7s_get_obj_cfgs(self):
@@ -121,7 +121,7 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
     "g1_loco_left": TaskRobotOverride(
         object_reach_target_poses={
             "obj": [
-                torch.tensor([0.0, 0.18, 0.06, 0.866, 0.0, 0.0, -0.5]),
+                torch.tensor([0.0, 0.0, 0.05, 0.707, 0.0, 0.707, 0.0]),
             ],
             "stovetop_main_group": [
                 torch.tensor([0.0, -0.15, 0.20, 1.0, 0.0, 0.0, 0.0]),
@@ -129,8 +129,7 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
         },
         init_state_pos_delta=(0.0, -0.8, 0.01),
         skill_cfg_fn=_g1_skill_cfg,
-        get_obj_cfgs_fn=_g1_get_obj_cfgs,
-        reset_env_fn=_g1_reset_env,
+        get_obj_cfgs_fn=_x7s_get_obj_cfgs,
         after_env_created_fn=_g1_after_env_created,
     ),
 }

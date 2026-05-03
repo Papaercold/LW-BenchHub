@@ -29,16 +29,18 @@ def _x7s_skill_cfg(cfg) -> None:
 
 
 def _g1_skill_cfg(cfg) -> None:
-    cfg.skills.moveto.extra_cfg.local_planner.max_linear_velocity  = 0.2
-    cfg.skills.moveto.extra_cfg.local_planner.max_angular_velocity = 0.2
+    cfg.skills.moveto.extra_cfg.local_planner.max_linear_velocity  = 1.0
+    cfg.skills.moveto.extra_cfg.local_planner.max_angular_velocity = 0.4
     cfg.skills.moveto.extra_cfg.local_planner.predict_time         = 0.4
-    cfg.skills.moveto.extra_cfg.global_planner.safety_distance     = 0.5
+    cfg.skills.moveto.extra_cfg.global_planner.safety_distance     = 0.3
     cfg.skills.moveto.extra_cfg.global_planner.proximity_weight    = 3.0
-    cfg.skills.moveto.extra_cfg.waypoint_tolerance                 = 0.25
-    cfg.skills.moveto.extra_cfg.goal_tolerance                     = 0.30
-    cfg.skills.moveto.extra_cfg.yaw_tolerance                      = 0.01
+    cfg.skills.moveto.extra_cfg.waypoint_tolerance                 = 0.1
+    cfg.skills.moveto.extra_cfg.goal_tolerance                     = 0.1
+    cfg.skills.moveto.extra_cfg.yaw_tolerance                      = 0.2
     cfg.skills.moveto.extra_cfg.use_dwa                            = False
-    cfg.skills.moveto.extra_cfg.sampling_radius                    = 1.0
+    cfg.skills.moveto.extra_cfg.sampling_radius                    = 0.7
+    cfg.max_steps = 1000
+    cfg.action_adapter.squat_settle_steps = 0
 
 
 TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
@@ -54,10 +56,19 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
     "g1_loco_left": TaskRobotOverride(
         object_reach_target_poses={
             "fridge_main_group": [
-                torch.tensor([0.05, -0.35, 0.10, 0.707, 0.0, 0.0, 0.707]),
+                torch.tensor([0.047, -0.429, 0.25, 0.707, 0.0, 0.0, 0.707]),
             ],
         },
-        init_state_pos_delta=(-0.45, -0.7, 0.0),
+        init_state_pos_delta=(0.0, -1.5, 0.0),
+        skill_cfg_fn=_g1_skill_cfg,
+    ),
+    "g1_loco_right": TaskRobotOverride(
+        object_reach_target_poses={
+            "fridge_main_group": [
+                torch.tensor([0.047, -0.429, 0.125, 0.707, 0.0, 0.0, 0.707]),
+            ],
+        },
+        init_state_pos_delta=(-0.15, -1.0, 0.0),
         skill_cfg_fn=_g1_skill_cfg,
     ),
 }
@@ -85,7 +96,7 @@ class OpenFridgePipelineCfg(AutoSimPipelineCfg):
         if resolved_robot.override.skill_cfg_fn:
             resolved_robot.override.skill_cfg_fn(self)
 
-        self.skills.pull.extra_cfg.move_offset = 0.3
+        self.skills.pull.extra_cfg.move_offset = 0.1
         self.skills.pull.extra_cfg.move_axis   = "-x"
 
         self.occupancy_map.floor_prim_suffix = "Scene/floor_room"
@@ -96,8 +107,13 @@ class OpenFridgePipelineCfg(AutoSimPipelineCfg):
 
 
 @configclass
-class G1OpenFridgePipelineCfg(OpenFridgePipelineCfg):
+class G1LeftOpenFridgePipelineCfg(OpenFridgePipelineCfg):
     robot_profile: str = "g1_loco_left"
+
+
+@configclass
+class G1RightOpenFridgePipelineCfg(OpenFridgePipelineCfg):
+    robot_profile: str = "g1_loco_right"
 
 
 class OpenFridgePipeline(AutoSimPipeline):
@@ -106,6 +122,15 @@ class OpenFridgePipeline(AutoSimPipeline):
             cfg.robot_profile, override=get_task_robot_override(cfg.robot_profile)
         )
         super().__init__(cfg)
+
+    def _execute_single_skill(self, skill, goal):
+        success, steps = super()._execute_single_skill(skill, goal)
+        if skill.cfg.name == "moveto":
+            robot = self._env.scene["robot"]
+            pos = robot.data.root_pos_w[0].cpu().numpy()
+            quat = robot.data.root_quat_w[0].cpu().numpy()
+            print(f"[DEBUG] Robot position after moveto: pos={pos.round(3)}, quat={quat.round(3)}")
+        return success, steps
 
     def load_env(self) -> ManagerBasedEnv:
         import gymnasium as gym

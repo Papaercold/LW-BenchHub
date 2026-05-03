@@ -46,6 +46,7 @@ class TaskRobotOverride:
     """Reach target mode for the selected robot and task combination."""
     init_state_pos_delta: tuple[float, float, float] | None = None
     init_state_rot: tuple[float, float, float, float] | None = None
+    init_state_joint_pos: dict[str, float] | None = None
     skill_cfg_fn: Callable | None = None
     get_obj_cfgs_fn: Callable | None = None
     after_env_created_fn: Callable | None = None
@@ -116,6 +117,17 @@ ROBOT_PROFILES: dict[str, RobotProfile] = {
         self_collision_check=False,
         env_cfg_setup_fn=_setup_g1_env_cfg,
     ),
+    "g1_loco_right": RobotProfile(
+        profile_id="g1_loco_right",
+        robot_name="G1-Loco-Controller",
+        action_adapter_factory=_make_g1_action_adapter,
+        motion_planner_robot_config_file="g1_right.yml",
+        robot_base_link_name="pelvis",
+        ee_link_name="right_wrist_yaw_link",
+        curobo_asset_path=str(AUTOSIM_CONTENT_ROOT / "assets" / "robot" / "g1"),
+        self_collision_check=False,
+        env_cfg_setup_fn=_setup_g1_env_cfg,
+    ),
 }
 
 
@@ -173,6 +185,8 @@ def apply_robot_env_cfg(env_cfg, resolved_robot: ResolvedRobotSettings) -> None:
         env_cfg.scene.robot.init_state.pos[2] += dz
     if override.init_state_rot is not None:
         env_cfg.scene.robot.init_state.rot = override.init_state_rot
+    if override.init_state_joint_pos is not None:
+        env_cfg.scene.robot.init_state.joint_pos.update(override.init_state_joint_pos)
 
 
 def build_env_extra_info(

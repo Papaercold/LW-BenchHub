@@ -27,8 +27,8 @@ def _x7s_skill_cfg(cfg) -> None:
 
 
 def _g1_skill_cfg(cfg) -> None:
-    cfg.skills.moveto.extra_cfg.local_planner.max_linear_velocity  = 0.2
-    cfg.skills.moveto.extra_cfg.local_planner.max_angular_velocity = 0.2
+    cfg.skills.moveto.extra_cfg.local_planner.max_linear_velocity  = 1.0
+    cfg.skills.moveto.extra_cfg.local_planner.max_angular_velocity = 0.4
     cfg.skills.moveto.extra_cfg.local_planner.predict_time         = 0.4
     cfg.skills.moveto.extra_cfg.global_planner.safety_distance     = 0.5
     cfg.skills.moveto.extra_cfg.global_planner.proximity_weight    = 3.0
