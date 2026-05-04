@@ -65,10 +65,10 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
     "g1_loco_right": TaskRobotOverride(
         object_reach_target_poses={
             "fridge_main_group": [
-                torch.tensor([0.047, -0.429, 0.125, 0.707, 0.0, 0.0, 0.707]),
+                torch.tensor([0.07, -0.429, 0.25, 0.707, 0.0, 0.0, 0.707]),
             ],
         },
-        init_state_pos_delta=(-0.15, -1.0, 0.0),
+        init_state_pos_delta=(-0.15, -1.5, 0.0),
         skill_cfg_fn=_g1_skill_cfg,
     ),
 }
@@ -96,8 +96,8 @@ class OpenFridgePipelineCfg(AutoSimPipelineCfg):
         if resolved_robot.override.skill_cfg_fn:
             resolved_robot.override.skill_cfg_fn(self)
 
-        self.skills.pull.extra_cfg.move_offset = 0.1
-        self.skills.pull.extra_cfg.move_axis   = "-x"
+        self.skills.push.extra_cfg.move_offset = 0.3
+        self.skills.push.extra_cfg.move_axis   = "-x"
 
         self.occupancy_map.floor_prim_suffix = "Scene/floor_room"
         self.motion_planner.world_ignore_subffixes = ["Scene/floor_room"]

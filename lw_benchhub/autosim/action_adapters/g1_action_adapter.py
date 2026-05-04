@@ -29,6 +29,7 @@ class G1ActionAdapter(ActionAdapterBase):
         self.register_apply_method("reach",   self._apply_reach)
         self.register_apply_method("lift",    self._apply_reach)
         self.register_apply_method("pull",    self._apply_reach)
+        self.register_apply_method("push",    self._apply_reach)
         self.register_apply_method("grasp",   self._apply_gripper)
         self.register_apply_method("ungrasp", self._apply_gripper)
 
