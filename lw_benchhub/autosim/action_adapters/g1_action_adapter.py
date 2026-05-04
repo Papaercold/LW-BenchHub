@@ -27,9 +27,9 @@ class G1ActionAdapter(ActionAdapterBase):
         super().__init__(cfg)
         self.register_apply_method("moveto",  self._apply_moveto)
         self.register_apply_method("reach",   self._apply_reach)
-        self.register_apply_method("lift",    self._apply_reach)
-        self.register_apply_method("pull",    self._apply_reach)
-        self.register_apply_method("push",    self._apply_reach)
+        self.register_apply_method("lift",    self._apply_reach_keep_gripper)
+        self.register_apply_method("pull",    self._apply_reach_keep_gripper)
+        self.register_apply_method("push",    self._apply_reach_keep_gripper)
         self.register_apply_method("grasp",   self._apply_gripper)
         self.register_apply_method("ungrasp", self._apply_gripper)
 
@@ -82,6 +82,30 @@ class G1ActionAdapter(ActionAdapterBase):
         action[3] = 1.0  # mode=1: squat/stance — keep legs fixed during arm motion
         action[4:11]  = target_joint_pos[r_arm_ids]
         action[11:18] = target_joint_pos[l_arm_ids]
+        # Keep fingers open during reach
+        finger_angles = torch.tensor(self.cfg.finger_open_angles, dtype=torch.float32, device=env.device)
+        action[18:32] = finger_angles
+
+        return action
+
+    def _apply_reach_keep_gripper(self, skill_output: SkillOutput, env: ManagerBasedEnv) -> torch.Tensor:
+        """Write cuRobo joint positions into the arm action terms, keep gripper state unchanged."""
+        target_joint_pos = skill_output.action
+
+        last_action = env.action_manager.action
+        action = last_action[0, :].clone()
+
+        robot = env.scene["robot"]
+        r_arm_ids, _ = robot.find_joints(env.action_manager.get_term("right_arm_action").cfg.joint_names)
+        l_arm_ids, _ = robot.find_joints(env.action_manager.get_term("left_arm_action").cfg.joint_names)
+
+        action[0] = 0.0
+        action[1] = 0.0
+        action[2] = 0.0
+        action[3] = 1.0  # mode=1: squat/stance — keep legs fixed during arm motion
+        action[4:11]  = target_joint_pos[r_arm_ids]
+        action[11:18] = target_joint_pos[l_arm_ids]
+        # Keep finger state unchanged (don't modify action[18:32])
 
         return action
 

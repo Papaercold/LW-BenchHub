@@ -15,7 +15,7 @@ class G1ActionAdapterCfg(ActionAdapterCfg):
     base_y_joint_name: str = "base_y_joint"
     base_yaw_joint_name: str = "base_yaw_joint"
 
-    finger_close_angles: tuple = (1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.8, 1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.8)
+    finger_close_angles: tuple = (-1.2, -1.2, -1.2, -1.2, -1.0, -1.0, -1.0, -1.2, -1.2, -1.2, -1.2, -1.0, -1.0, -1.0)
     """Per-joint finger angles (rad) when gripper is closed."""
     finger_open_angles: tuple = (0.0,) * 14
     """Per-joint finger angles (rad) when gripper is open."""

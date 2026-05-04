@@ -37,7 +37,7 @@ def _g1_skill_cfg(cfg) -> None:
     cfg.skills.moveto.extra_cfg.goal_tolerance                     = 0.30
     cfg.skills.moveto.extra_cfg.yaw_tolerance                      = 0.01
     cfg.skills.moveto.extra_cfg.use_dwa                            = False
-    cfg.skills.moveto.extra_cfg.per_object_sampling_radius         = {"obj": 0.60, "stovetop_main_group": 0.30}
+    cfg.skills.moveto.extra_cfg.per_object_sampling_radius         = {"obj": 0.52, "stovetop_main_group": 0.30}
 
 
 def _x7s_get_obj_cfgs(self):
@@ -130,16 +130,16 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
     "g1_loco_left": TaskRobotOverride(
         object_reach_target_poses={
             "obj": [
-                torch.tensor([0.0, 0.09, 0.10, 0.707, 0.0, 0.0, -0.707]),
+                torch.tensor([0.003, 0.171, 0.084, 0.884, 0.0, 0.0, -0.468]),
             ],
             "stovetop_main_group": [
-                torch.tensor([-0.0, -0.045, 0.24, 0.707, 0.0, 0.0, 0.707]),
+                torch.tensor([0.0, -0.15, 0.20, 1.0, 0.0, 0.0, 0.0]),
             ],
         },
         init_state_pos_delta=(0.0, -0.8, 0.01),
         skill_cfg_fn=_g1_skill_cfg,
-        get_obj_cfgs_fn=_x7s_get_obj_cfgs,
-        reset_env_fn=_x7s_reset_env,
+        get_obj_cfgs_fn=_g1_get_obj_cfgs,
+        reset_env_fn=_g1_reset_env,
         after_env_created_fn=_g1_after_env_created,
     ),
 }
@@ -167,12 +167,12 @@ class KettleBoilingPipelineCfg(AutoSimPipelineCfg):
         if resolved_robot.override.skill_cfg_fn:
             resolved_robot.override.skill_cfg_fn(self)
 
-        self.skills.lift.extra_cfg.move_offset = 0.15
+        self.skills.lift.extra_cfg.move_offset = 0.10
         self.skills.lift.extra_cfg.move_axis   = "+z"
 
         self.motion_planner.enable_dynamic_world_sync = True
         self.occupancy_map.floor_prim_suffix = "Scene/floor_room"
-        self.max_steps = 800
+        self.max_steps = 1500
 
         self.motion_planner.world_ignore_subffixes = ["Scene/floor_room"]
         self.motion_planner.world_only_subffixes   = [
