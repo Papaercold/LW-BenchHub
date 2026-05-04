@@ -24,7 +24,7 @@ robot_cfg:
         "right_wrist_roll_link",     "right_wrist_pitch_link",   "right_wrist_yaw_link",
       ]
 
-    collision_spheres: "spheres/collision_g1_autosim.yml"
+    collision_spheres: "spheres/collision_g1.yml"
     collision_sphere_buffer: 0.002
     extra_collision_spheres: {"left_hand_palm_link": 20}
     use_global_cumul: True
