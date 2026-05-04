@@ -56,6 +56,14 @@ def _x7s_get_obj_cfgs(self):
     )]
 
 
+def _x7s_reset_env(pipeline) -> None:
+    obj = pipeline._env.scene["obj"]
+    obj.write_root_pose_to_sim(
+        torch.tensor([[2.0, -0.56, 1.1, 0.0, 0.0, 0.0, 1.0]], device=pipeline._env.device)
+    )
+    obj.reset()
+
+
 def _g1_get_obj_cfgs(self):
     return [
         dict(
@@ -108,7 +116,7 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
         reach_extra_target_mode="keep_initial_relative_offset",
         object_reach_target_poses={
             "obj": [
-                torch.tensor([0.0, 0.09, 0.15, 0.707, 0.0, 0.0, -0.707]),
+                torch.tensor([0.0, 0.09, 0.10, 0.707, 0.0, 0.0, -0.707]),
             ],
             "stovetop_main_group": [
                 torch.tensor([-0.0, -0.045, 0.24, 0.707, 0.0, 0.0, 0.707]),
@@ -117,19 +125,21 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
         init_state_pos_delta=(0.0, -0.8, 0.01),
         skill_cfg_fn=_x7s_skill_cfg,
         get_obj_cfgs_fn=_x7s_get_obj_cfgs,
+        reset_env_fn=_x7s_reset_env,
     ),
     "g1_loco_left": TaskRobotOverride(
         object_reach_target_poses={
             "obj": [
-                torch.tensor([0.0, 0.0, 0.05, 0.707, 0.0, 0.707, 0.0]),
+                torch.tensor([0.0, 0.09, 0.10, 0.707, 0.0, 0.0, -0.707]),
             ],
             "stovetop_main_group": [
-                torch.tensor([0.0, -0.15, 0.20, 1.0, 0.0, 0.0, 0.0]),
+                torch.tensor([-0.0, -0.045, 0.24, 0.707, 0.0, 0.0, 0.707]),
             ],
         },
         init_state_pos_delta=(0.0, -0.8, 0.01),
         skill_cfg_fn=_g1_skill_cfg,
         get_obj_cfgs_fn=_x7s_get_obj_cfgs,
+        reset_env_fn=_x7s_reset_env,
         after_env_created_fn=_g1_after_env_created,
     ),
 }

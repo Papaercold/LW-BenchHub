@@ -147,7 +147,7 @@ class OpenFridgePipeline(AutoSimPipeline):
             num_envs=1,
             use_fabric=False,
             first_person_view=False,
-            enable_cameras=True,
+            enable_cameras=False,
             execute_mode=ExecuteMode.TELEOP,
             usd_simplify=False,
             seed=42,
