@@ -76,7 +76,7 @@ class ResolvedRobotSettings:
 
 
 def _setup_g1_env_cfg(env_cfg) -> None:
-    from lw_benchhub.autosim.isaaclab_tasks.g1_autosim_cfg import (
+    from lw_benchhub.autosim.robot_env_configs.g1_autosim_cfg import (
         G1ActionsCfg, G1ObservationsCfg, G1EventCfg,
     )
     env_cfg.actions      = G1ActionsCfg()
