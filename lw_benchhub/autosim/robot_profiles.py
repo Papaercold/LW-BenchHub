@@ -51,10 +51,8 @@ class TaskRobotOverride:
     get_obj_cfgs_fn: Callable | None = None
     after_env_created_fn: Callable | None = None
     reset_env_fn: Callable | None = None
-    finger_close_angles: tuple[float, ...] | None = None
-    """Per-task override for gripper closed angles. If None, uses action adapter default."""
-    finger_open_angles: tuple[float, ...] | None = None
-    """Per-task override for gripper open angles. If None, uses action adapter default."""
+    skill_finger_configs: dict[str, dict[str, tuple[float, ...]]] | None = None
+    """Per-skill per-hand finger configurations. Format: {"left_hand": {"lift": (7 values), "push": (7 values)}, "right_hand": {...}}"""
 
 
 @dataclass
@@ -159,12 +157,11 @@ def configure_robot_runtime_settings(pipeline_cfg, resolved_robot: ResolvedRobot
 
     # Action adapter
     pipeline_cfg.action_adapter = resolved_robot.profile.action_adapter_factory()
+    pipeline_cfg.action_adapter.ee_link_name = resolved_robot.ee_link_name
 
-    # Apply per-task finger angle overrides if specified
-    if resolved_robot.override.finger_close_angles is not None:
-        pipeline_cfg.action_adapter.finger_close_angles = resolved_robot.override.finger_close_angles
-    if resolved_robot.override.finger_open_angles is not None:
-        pipeline_cfg.action_adapter.finger_open_angles = resolved_robot.override.finger_open_angles
+    # Apply per-skill per-hand finger angle configs if specified
+    if resolved_robot.override.skill_finger_configs is not None:
+        pipeline_cfg.action_adapter.skill_finger_configs = resolved_robot.override.skill_finger_configs
 
     # Motion planner
     pipeline_cfg.motion_planner.robot_config_file = resolved_robot.motion_planner_robot_config_file

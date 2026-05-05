@@ -25,11 +25,20 @@ class G1ActionAdapter(ActionAdapterBase):
 
     def __init__(self, cfg: G1ActionAdapterCfg):
         super().__init__(cfg)
+
+        # Determine active hand from ee_link_name
+        self._active_hand = None
+        if cfg.ee_link_name:
+            if "left" in cfg.ee_link_name.lower():
+                self._active_hand = "left_hand"
+            elif "right" in cfg.ee_link_name.lower():
+                self._active_hand = "right_hand"
+
         self.register_apply_method("moveto",  self._apply_moveto)
         self.register_apply_method("reach",   self._apply_reach)
-        self.register_apply_method("lift",    self._apply_reach_keep_gripper)
-        self.register_apply_method("pull",    self._apply_reach_keep_gripper)
-        self.register_apply_method("push",    self._apply_reach_keep_gripper)
+        self.register_apply_method("lift",    lambda so, env: self._apply_reach_with_skill_fingers(so, env, "lift"))
+        self.register_apply_method("pull",    lambda so, env: self._apply_reach_with_skill_fingers(so, env, "pull"))
+        self.register_apply_method("push",    lambda so, env: self._apply_reach_with_skill_fingers(so, env, "push"))
         self.register_apply_method("grasp",   self._apply_gripper)
         self.register_apply_method("ungrasp", self._apply_gripper)
 
@@ -108,6 +117,50 @@ class G1ActionAdapter(ActionAdapterBase):
         # Keep finger state unchanged (don't modify action[18:32])
 
         return action
+
+    def _apply_reach_with_skill_fingers(self, skill_output: SkillOutput, env: ManagerBasedEnv, skill_name: str) -> torch.Tensor:
+        """Write cuRobo joint positions and apply skill-specific finger configuration."""
+        target_joint_pos = skill_output.action
+
+        last_action = env.action_manager.action
+        action = last_action[0, :].clone()
+
+        robot = env.scene["robot"]
+        r_arm_ids, _ = robot.find_joints(env.action_manager.get_term("right_arm_action").cfg.joint_names)
+        l_arm_ids, _ = robot.find_joints(env.action_manager.get_term("left_arm_action").cfg.joint_names)
+
+        action[0] = 0.0
+        action[1] = 0.0
+        action[2] = 0.0
+        action[3] = 1.0  # mode=1: squat/stance
+        action[4:11]  = target_joint_pos[r_arm_ids]
+        action[11:18] = target_joint_pos[l_arm_ids]
+
+        # Apply skill-specific finger configuration
+        finger_angles = self._get_skill_finger_angles(skill_name)
+        if finger_angles is not None:
+            action[18:32] = torch.tensor(finger_angles, dtype=torch.float32, device=env.device)
+        # else: keep current finger state
+
+        return action
+
+    def _get_skill_finger_angles(self, skill_name: str) -> tuple[float, ...] | None:
+        """Get skill-specific finger angles for the active hand, or None if not configured."""
+        if self.cfg.skill_finger_configs is None or self._active_hand is None:
+            return None
+
+        hand_configs = self.cfg.skill_finger_configs.get(self._active_hand, {})
+        hand_7_angles = hand_configs.get(skill_name)
+
+        if hand_7_angles is None:
+            return None
+
+        # Construct 14-joint tuple: (right_hand_7, left_hand_7)
+        zeros = (0.0,) * 7
+        if self._active_hand == "right_hand":
+            return hand_7_angles + zeros
+        else:  # left_hand
+            return zeros + hand_7_angles
 
     # ------------------------------------------------------------------
     # Gripper (three-finger open / close)

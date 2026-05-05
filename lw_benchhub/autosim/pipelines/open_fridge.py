@@ -61,7 +61,12 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
         },
         init_state_pos_delta=(-0.15, -1.5, 0.0),
         skill_cfg_fn=_g1_skill_cfg,
-        finger_close_angles=(1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.8, 1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.8),
+        skill_finger_configs={
+            "right_hand": {
+                "push": (1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.8),
+                "pull": (1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.8),
+            }
+        },
     ),
 }
 
