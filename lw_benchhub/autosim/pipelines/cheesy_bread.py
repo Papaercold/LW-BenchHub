@@ -36,6 +36,8 @@ def _g1_skill_cfg(cfg) -> None:
     cfg.skills.moveto.extra_cfg.goal_tolerance                     = 0.30
     cfg.skills.moveto.extra_cfg.yaw_tolerance                      = 0.01
     cfg.skills.moveto.extra_cfg.use_dwa                            = False
+    cfg.skills.moveto.extra_cfg.per_object_sampling_radius         = {"cheese": 0.53, "bread": 0.53}
+    cfg.skills.moveto.extra_cfg.per_object_yaw_tolerance           = {"cheese": 0.01, "bread": 0.1}
 
 
 TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {

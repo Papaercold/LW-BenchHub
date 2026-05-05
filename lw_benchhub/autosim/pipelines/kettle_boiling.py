@@ -142,6 +142,7 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
         get_obj_cfgs_fn=_g1_get_obj_cfgs,
         reset_env_fn=_g1_reset_env,
         after_env_created_fn=_g1_after_env_created,
+        finger_close_angles=(-1.2, -1.2, -1.2, -1.2, -1.0, -1.0, -1.0, -1.2, -1.2, -1.2, -1.2, -1.0, -1.0, -1.0),
     ),
 }
 

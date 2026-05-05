@@ -39,9 +39,9 @@ register_pipeline(
 
 # G1 pipelines
 register_pipeline(
-    id="LWBenchhub-Autosim-G1LeftOpenFridgePipeline-v0",
+    id="LWBenchhub-Autosim-G1OpenFridgePipeline-v0",
     entry_point=f"{__name__}.pipelines.open_fridge:OpenFridgePipeline",
-    cfg_entry_point=f"{__name__}.pipelines.open_fridge:G1LeftOpenFridgePipelineCfg",
+    cfg_entry_point=f"{__name__}.pipelines.open_fridge:G1OpenFridgePipelineCfg",
 )
 
 register_pipeline(
@@ -72,10 +72,4 @@ register_pipeline(
     id="LWBenchhub-Autosim-G1CloseOvenPipeline-v0",
     entry_point=f"{__name__}.pipelines.close_oven:CloseOvenPipeline",
     cfg_entry_point=f"{__name__}.pipelines.close_oven:G1CloseOvenPipelineCfg",
-)
-
-register_pipeline(
-    id="LWBenchhub-Autosim-G1RightOpenFridgePipeline-v0",
-    entry_point=f"{__name__}.pipelines.open_fridge:OpenFridgePipeline",
-    cfg_entry_point=f"{__name__}.pipelines.open_fridge:G1RightOpenFridgePipelineCfg",
 )

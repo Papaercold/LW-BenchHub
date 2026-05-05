@@ -53,15 +53,6 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
         init_state_pos_delta=(-0.45, -0.7, 0.0),
         skill_cfg_fn=_x7s_skill_cfg,
     ),
-    "g1_loco_left": TaskRobotOverride(
-        object_reach_target_poses={
-            "fridge_main_group": [
-                torch.tensor([0.047, -0.429, 0.25, 0.707, 0.0, 0.0, 0.707]),
-            ],
-        },
-        init_state_pos_delta=(0.0, -1.5, 0.0),
-        skill_cfg_fn=_g1_skill_cfg,
-    ),
     "g1_loco_right": TaskRobotOverride(
         object_reach_target_poses={
             "fridge_main_group": [
@@ -70,6 +61,7 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
         },
         init_state_pos_delta=(-0.15, -1.5, 0.0),
         skill_cfg_fn=_g1_skill_cfg,
+        finger_close_angles=(1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.8, 1.0, 1.0, 1.0, 1.0, 0.8, 0.8, 0.8),
     ),
 }
 
@@ -107,12 +99,7 @@ class OpenFridgePipelineCfg(AutoSimPipelineCfg):
 
 
 @configclass
-class G1LeftOpenFridgePipelineCfg(OpenFridgePipelineCfg):
-    robot_profile: str = "g1_loco_left"
-
-
-@configclass
-class G1RightOpenFridgePipelineCfg(OpenFridgePipelineCfg):
+class G1OpenFridgePipelineCfg(OpenFridgePipelineCfg):
     robot_profile: str = "g1_loco_right"
 
 
