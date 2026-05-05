@@ -37,7 +37,8 @@ def _g1_skill_cfg(cfg) -> None:
     cfg.skills.moveto.extra_cfg.goal_tolerance                     = 0.30
     cfg.skills.moveto.extra_cfg.yaw_tolerance                      = 0.01
     cfg.skills.moveto.extra_cfg.use_dwa                            = False
-    cfg.skills.moveto.extra_cfg.per_object_sampling_radius         = {"obj": 0.53, "stovetop_main_group": 0.55}
+    cfg.skills.moveto.extra_cfg.per_object_sampling_radius         = {"obj": 0.53, "stovetop_main_group": 0.45}
+    cfg.skills.moveto.extra_cfg.per_object_yaw_tolerance           = {"obj": 0.01, "stovetop_main_group": 0.15}
 
 
 def _x7s_get_obj_cfgs(self):
@@ -133,7 +134,7 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
                 torch.tensor([-0.05, 0.22, 0.082, 0.6488, 0.0, 0.0, -0.7608]),
             ],
             "stovetop_main_group": [
-                torch.tensor([0.0, -0.15, 0.20, 1.0, 0.0, 0.0, 0.0]),
+                torch.tensor([-0.0592, -0.3930, 0.24, 0.6488, 0.0000, 0.0000, 0.7608]),
             ],
         },
         init_state_pos_delta=(0.0, -0.8, 0.01),
