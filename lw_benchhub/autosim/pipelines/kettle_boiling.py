@@ -131,7 +131,7 @@ TASK_ROBOT_OVERRIDES: dict[str, TaskRobotOverride] = {
     "g1_loco_left": TaskRobotOverride(
         object_reach_target_poses={
             "obj": [
-                torch.tensor([-0.05, 0.22, 0.082, 0.6488, 0.0, 0.0, -0.7608]),
+                torch.tensor([-0.05, 0.22, 0.08, 0.649, 0.0, 0.0, -0.761]),
             ],
             "stovetop_main_group": [
                 torch.tensor([-0.0592, -0.3930, 0.24, 0.6488, 0.0000, 0.0000, 0.7608]),
